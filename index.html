@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>한글수박 · ハングルすいか</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="bg-deco"><span>🍉</span><span>🥝</span><span>🍑</span><span>🍓</span><span>🍇</span><span>🍒</span><span>🍊</span><span>🍋</span></div>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="head">
+    <div class="title">
+      <span class="logo">🍉</span>
+      <div>
+        <h1>한글수박</h1>
+        <p>同じ単語を合体させて 한국 마스터へ！</p>
+      </div>
+    </div>
+    <div class="score-panel">
+      <div class="score-box">
+        <span class="lbl">SCORE</span>
+        <span class="val" id="score">0</span>
+      </div>
+      <div class="score-box small">
+        <span class="lbl">BEST</span>
+        <span class="val" id="hi-score">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs">
+    <button class="mode-btn active" data-mode="normal">🎯 ノーマル</button>
+    <button class="mode-btn" data-mode="daily">📅 デイリー</button>
+    <button class="mode-btn" data-mode="kpop">🎤 K-POP</button>
+    <button class="mode-btn" data-mode="review">📚 復習</button>
+  </div>
+
+  <!-- Game stage -->
+  <main class="stage">
+    <!-- Side info L -->
+    <aside class="side-l">
+      <div class="next-card">
+        <div class="next-label">NEXT</div>
+        <canvas id="next-canvas" width="120" height="120"></canvas>
+      </div>
+      <div class="combo-card" id="combo-card">
+        <div class="combo-x">x<span id="combo-n">1</span></div>
+        <div class="combo-l">COMBO</div>
+      </div>
+    </aside>
+
+    <!-- Canvas wrap -->
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="game" width="420" height="640"></canvas>
+      <div class="floating-popups" id="popups"></div>
+      <div class="hover-card" id="hover-card"></div>
+    </div>
+
+    <!-- Side info R: chain ladder -->
+    <aside class="side-r">
+      <div class="chain-card">
+        <div class="chain-title">合体ツリー</div>
+        <div class="chain-list" id="chain-list"></div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Bottom toolbar -->
+  <div class="toolbar">
+    <button class="tool-btn" id="btn-restart">🔄 リトライ</button>
+    <button class="tool-btn" id="btn-mute">🔊 音</button>
+    <button class="tool-btn" id="btn-help">❓ 遊び方</button>
+    <button class="tool-btn" id="btn-glossary">📖 学んだ単語</button>
+  </div>
+
+</div>
+
+<!-- Game-over modal -->
+<div class="modal" id="m-over">
+  <div class="modal-card">
+    <div class="emoji">💥</div>
+    <h2>ゲームオーバー</h2>
+    <div class="result-row">
+      <div class="r-cell"><span class="r-l">SCORE</span><b id="r-score">0</b></div>
+      <div class="r-cell"><span class="r-l">BEST</span><b id="r-best">0</b></div>
+      <div class="r-cell"><span class="r-l">最大合体</span><b id="r-max">Lv.1</b></div>
+    </div>
+    <p class="learned-line">今回触れた単語: <span id="r-learned">0</span> 語</p>
+    <div class="modal-btns">
+      <button class="btn-primary" id="r-again">もう一度</button>
+      <button class="btn-secondary" id="r-glossary">学んだ単語</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help modal -->
+<div class="modal" id="m-help">
+  <div class="modal-card">
+    <div class="emoji">📖</div>
+    <h2>遊び方</h2>
+    <ul class="help-list">
+      <li><b>クリック / タップ</b>で単語を落とす</li>
+      <li>カーソルを動かして<b>落とす位置</b>を決める</li>
+      <li>同じ単語が触れると<b>合体して進化</b>！スコアと意味が表示</li>
+      <li>連続で合体すると<b>コンボ</b>でスコア倍増</li>
+      <li>赤い線を超えるとゲームオーバー</li>
+      <li>合体後の単語に<b>ホバー</b>で意味と発音が出ます</li>
+    </ul>
+    <h3>モード</h3>
+    <ul class="help-list">
+      <li>🎯 <b>ノーマル</b>: 韓国語頻出単語</li>
+      <li>📅 <b>デイリー</b>: 毎日固定シードでスコア競争</li>
+      <li>🎤 <b>K-POP</b>: K-POP定番フレーズ</li>
+      <li>📚 <b>復習</b>: 過去の未習得単語が多めに出現</li>
+    </ul>
+    <button class="btn-primary" onclick="UI.closeModal('m-help')">閉じる</button>
+  </div>
+</div>
+
+<!-- Glossary modal -->
+<div class="modal" id="m-glossary">
+  <div class="modal-card big">
+    <div class="emoji">📚</div>
+    <h2>学んだ単語</h2>
+    <div class="glossary-stats" id="g-stats"></div>
+    <div class="glossary-list" id="glossary-list"></div>
+    <button class="btn-primary" onclick="UI.closeModal('m-glossary')">閉じる</button>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/physics.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
