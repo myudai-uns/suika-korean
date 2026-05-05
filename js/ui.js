@@ -61,7 +61,6 @@ const UI = (() => {
   }
 
   function renderChainList(chain, maxReached){
-    const list = $('chain-list');
     let html = '';
     for(let i = 0; i < chain.length; i++){
       const lv = i + 1;
@@ -74,7 +73,10 @@ const UI = (() => {
         <span class="ch-m">${unlocked ? it.meaning : ''}</span>
       </div>`;
     }
-    list.innerHTML = html;
+    const list = $('chain-list');
+    if(list) list.innerHTML = html;
+    const modalList = $('chain-list-modal');
+    if(modalList) modalList.innerHTML = html;
   }
 
   function openModal(id){ $(id).classList.add('show'); }

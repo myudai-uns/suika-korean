@@ -1,6 +1,13 @@
 /* ===== Reset & base ===== */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
-html,body{height:100%;overflow:hidden}
+html,body{
+  height:100%;                              /* legacy fallback */
+  height:-webkit-fill-available;            /* iOS Safari */
+  height:100svh;                            /* modern: small viewport unit */
+  height:var(--app-h,100svh);               /* JS-set explicit pixel height (final authority) */
+  overflow:hidden;
+  overscroll-behavior:none;                 /* block iOS Safari rubber-band */
+}
 body{
   font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI",-apple-system,system-ui,sans-serif;
   background:linear-gradient(180deg,#ffe9d6 0%,#ffd2c4 35%,#ffc1de 70%,#d6c5ff 100%);
@@ -28,12 +35,25 @@ body{
 }
 
 .app{
-  position:relative;z-index:1;
-  height:100%;
-  display:flex;flex-direction:column;
+  /* Pin to the visible viewport. Fixed positioning is the most reliable way
+     to bind to viewport edges; JS will set explicit pixel height for --app-h
+     as the final authority on mobile chrome state. */
+  position:fixed;
+  top:0;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:1;
+  width:100%;
   max-width:1080px;
-  margin:0 auto;
-  padding:14px 16px 12px;
+  height:var(--app-h,100svh);
+  max-height:var(--app-h,100svh);
+  display:flex;flex-direction:column;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+  overflow:hidden;
 }
 
 /* ===== Header ===== */
@@ -70,7 +90,7 @@ body{
 .mode-btn.active{background:linear-gradient(180deg,#ff8eb6,#ff6fa1);color:#fff;border-color:#d44d80}
 
 /* ===== Stage ===== */
-.stage{flex:1;display:flex;gap:12px;justify-content:center;align-items:flex-start;min-height:0}
+.stage{flex:1;display:flex;gap:12px;justify-content:center;align-items:center;min-height:0;min-width:0;overflow:hidden}
 .canvas-wrap{
   position:relative;
   z-index:1;
@@ -80,12 +100,17 @@ body{
   border-radius:24px;
   box-shadow:0 8px 0 #e190b9, 0 12px 30px rgba(196,62,110,.25);
   overflow:hidden;
-  flex-shrink:0;
+  /* size is JS-calculated; fall back to aspect-ratio if JS hasn't run yet */
+  aspect-ratio: 420 / 640;
+  max-height:100%;
+  max-width:100%;
+  flex:0 0 auto;
 }
-#game{display:block;touch-action:none;cursor:none}
+#game{display:block;width:100%;height:100%;touch-action:none}
+@media (hover:hover) and (pointer:fine){ #game{cursor:none} }
 
 /* Aside cards */
-.side-l,.side-r{display:flex;flex-direction:column;gap:10px;width:140px;flex-shrink:0;padding-top:6px}
+.side-l,.side-r{display:flex;flex-direction:column;gap:10px;width:140px;flex-shrink:0;padding-top:6px;align-self:flex-start;max-height:100%;overflow:hidden}
 .next-card,.combo-card,.chain-card{
   background:#fff;border:3px solid #fff;border-radius:18px;padding:10px;
   box-shadow:0 4px 0 #e8c0d0;
@@ -99,7 +124,7 @@ body{
 .combo-x span{color:#d9580e}
 .combo-l{font-size:10px;font-weight:900;color:#a64b00;letter-spacing:2px;margin-top:2px}
 
-.chain-card{padding:8px;max-height:560px;overflow-y:auto}
+.chain-card{padding:8px;max-height:100%;overflow-y:auto;min-height:0}
 .chain-list{display:flex;flex-direction:column;gap:4px}
 .chain-row{
   display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:10px;
@@ -205,13 +230,16 @@ body{
 .gloss-item .gja{color:#7a5b6e;font-weight:700;display:block;margin-top:2px}
 .gloss-item .gn{font-size:9px;color:#aaa;font-weight:900;display:block;margin-top:3px;letter-spacing:1px}
 
+/* Tree button hidden by default — only shown on mobile */
+#btn-tree{display:none}
+
 /* Responsive */
 @media (max-width: 760px){
-  .side-l,.side-r{width:90px}
+  .side-l,.side-r{width:110px}
   .next-card{padding:6px}
-  #next-canvas{width:78px;height:78px}
+  #next-canvas{width:88px;height:88px}
   .combo-x{font-size:22px}
-  .chain-card{max-height:400px}
+  .chain-card{max-height:100%}
   .chain-row .ch-m{display:none}
   .title h1{font-size:20px}
   .title p{display:none}
@@ -220,18 +248,73 @@ body{
   .score-box .val{font-size:20px}
   .score-box.small{min-width:72px}
 }
-@media (max-width: 540px){
-  .app{padding:8px 6px}
-  .stage{gap:4px}
-  .side-l,.side-r{width:60px}
-  .next-card,.combo-card,.chain-card{padding:6px;border-radius:12px}
-  #next-canvas{width:50px;height:50px}
-  .next-label,.chain-title,.combo-l{font-size:8px}
-  .combo-x{font-size:18px}
-  .chain-row{padding:2px 4px}
-  .chain-row .ch-lv{width:18px;font-size:8px}
-  .chain-row .ch-dot{width:10px;height:10px}
-  .chain-row .ch-w{font-size:9px}
-  .mode-btn{padding:5px 8px;font-size:10px}
-  .tool-btn{padding:6px 10px;font-size:11px}
+
+/* ===== Mobile (portrait phones) — vertical stacking ===== */
+@media (max-width: 640px){
+  /* Show the tree button only on mobile */
+  #btn-tree{display:inline-flex;align-items:center;justify-content:center}
+
+  .app{padding:max(4px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left))}
+  .head{margin-bottom:4px;gap:6px}
+  .title{gap:6px;flex-shrink:1;min-width:0}
+  .title h1{font-size:16px;letter-spacing:0;white-space:nowrap}
+  .title p{display:none}
+  .logo{font-size:24px;animation:none;filter:drop-shadow(0 2px 0 #c45a8e)}
+  .score-panel{gap:4px;flex-shrink:0}
+  .score-box{padding:3px 8px;min-width:auto;border-width:2px;border-radius:12px;box-shadow:0 2px 0 #e190b9}
+  .score-box.small{box-shadow:0 2px 0 #e09f6f}
+  .score-box .lbl{font-size:8px;letter-spacing:1px}
+  .score-box .val{font-size:14px}
+  .mode-tabs{gap:3px;margin-bottom:4px}
+  .mode-btn{padding:4px 8px;font-size:10px;border-radius:10px;border-bottom-width:3px}
+
+  /* Stack vertically; canvas takes ALL remaining vertical space */
+  .stage{flex-direction:column;gap:4px;align-items:stretch;overflow:visible}
+
+  /* Hide both side panels — NEXT is redundant with the canvas drop-guide ghost,
+     chain ladder lives in the m-chain modal */
+  .side-l,.side-r{display:none}
+
+  /* Canvas takes 100% of remaining vertical space */
+  .canvas-wrap{
+    flex:1 1 auto;
+    width:100%;
+    max-width:100%;
+    height:100%;
+    max-height:100%;
+    align-self:center;
+    border-width:3px;
+    border-bottom-width:4px;
+    border-radius:16px;
+    box-shadow:0 4px 0 #e190b9, 0 6px 14px rgba(196,62,110,.18);
+  }
+
+  /* Toolbar guaranteed to fit on a single row via tight buttons */
+  .toolbar{gap:4px;margin-top:4px;flex-wrap:nowrap}
+  .tool-btn{
+    padding:7px 4px;font-size:10px;border-radius:10px;
+    flex:1 1 0;min-width:0;border-bottom-width:3px;
+    white-space:nowrap;letter-spacing:-.5px;
+  }
+
+  /* Hover card readable on mobile */
+  .hover-card{font-size:13px;max-width:80vw;white-space:normal}
+
+  /* Modal sizing for narrow screens */
+  .modal{padding:10px}
+  .modal-card{padding:18px 14px 14px;border-radius:16px}
+  .modal-card.big{max-width:100%}
+  .modal-card h2{font-size:18px;margin-bottom:10px}
+  .help-list,.modal-card h3{font-size:12px}
+  .glossary-list{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));max-height:60vh}
+}
+
+@media (max-width: 380px){
+  .title h1{font-size:14px}
+  .logo{font-size:22px}
+  .score-box{padding:2px 6px}
+  .score-box .val{font-size:13px}
+  .score-box .lbl{font-size:7px}
+  .mode-btn{padding:3px 6px;font-size:9px}
+  .tool-btn{padding:6px 2px;font-size:9px;letter-spacing:-1px}
 }

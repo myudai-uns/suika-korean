@@ -35,7 +35,8 @@ class World {
     this.h = opts.height;
     this.gravity = opts.gravity ?? 0.55;     // px/frame²  (60fps)
     this.airDamp = 0.9985;
-    this.angularDamp = 0.985;
+    this.angularDamp = 0.92;
+    this.angularMax = 0.18;                  // rad/frame, hard cap
     this.restitution = 0.18;
     this.friction = 0.4;
     this.ceiling = opts.ceiling ?? 80;       // danger line y
@@ -61,6 +62,8 @@ class World {
       b.vx *= this.airDamp;
       b.vy *= this.airDamp;
       b.angularVel *= this.angularDamp;
+      if(b.angularVel >  this.angularMax) b.angularVel =  this.angularMax;
+      if(b.angularVel < -this.angularMax) b.angularVel = -this.angularMax;
       b.x += b.vx * dtScale;
       b.y += b.vy * dtScale;
       b.angle += b.angularVel * dtScale;
@@ -89,7 +92,7 @@ class World {
           if(b.vy > 0){
             b.vy = -b.vy * this.restitution;
             b.vx *= 0.85;
-            b.angularVel += (Math.random()-0.5) * 0.05;
+            b.angularVel += (Math.random()-0.5) * 0.02;
           }
         }
       }
@@ -154,9 +157,10 @@ class World {
           b.vx += jt * tx * b.invMass;
           b.vy += jt * ty * b.invMass;
 
-          // Add a touch of spin from impact
-          a.angularVel += -velAlongT * 0.002;
-          b.angularVel +=  velAlongT * 0.002;
+          // Add a touch of spin from impact (clamped per-step to prevent runaway)
+          const spin = Math.max(-0.04, Math.min(0.04, velAlongT * 0.0008));
+          a.angularVel -= spin;
+          b.angularVel += spin;
         }
       }
     }

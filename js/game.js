@@ -34,6 +34,7 @@ const Game = (() => {
   let gameOver = false;
   let hoverBody = null;
   let bgPulse = 0;
+  let gameOverTimeoutId = 0;
 
   /* ===== SOUND (WebAudio synth) ===== */
   let audioCtx = null;
@@ -132,9 +133,11 @@ const Game = (() => {
     UI.setScore(score);
     UI.setCombo(combo);
 
-    // Pop visual
+    // Pop visual (convert canvas-internal coords to screen px)
     const rect = canvas.getBoundingClientRect();
-    UI.popScore(rect.left + cx, rect.top + cy, '+' + gained, combo > 1);
+    const sx = rect.width / canvas.width;
+    const sy = rect.height / canvas.height;
+    UI.popScore(rect.left + cx * sx, rect.top + cy * sy, '+' + gained, combo > 1);
 
     // Spawn next-level body if exists in chain
     if(newLevel <= chain.length){
@@ -166,7 +169,7 @@ const Game = (() => {
       if(newLevel === chain.length){
         score += 5000;
         UI.setScore(score);
-        UI.popScore(rect.left + cx, rect.top + cy - 30, '+5000 LEGEND!', true);
+        UI.popScore(rect.left + cx * sx, rect.top + (cy - 30) * sy, '+5000 LEGEND!', true);
         UI.shakeCanvas(24);
       }
     } else {
@@ -195,9 +198,13 @@ const Game = (() => {
     Storage.setHighScore(score, mode);
     Storage.incrementPlay();
 
-    setTimeout(()=>{
-      const data = Storage.get();
-      UI.showGameOver(score, data.highScore, maxLevelThisRun, learnedThisRun.size);
+    if(gameOverTimeoutId) clearTimeout(gameOverTimeoutId);
+    gameOverTimeoutId = setTimeout(()=>{
+      gameOverTimeoutId = 0;
+      if(gameOver){
+        const data = Storage.get();
+        UI.showGameOver(score, data.highScore, maxLevelThisRun, learnedThisRun.size);
+      }
     }, 700);
   }
 
@@ -455,8 +462,38 @@ const Game = (() => {
   canvas.addEventListener('mousemove', onMove);
   canvas.addEventListener('mouseleave', onLeave);
   canvas.addEventListener('mousedown', onClick);
-  canvas.addEventListener('touchmove', e => { e.preventDefault(); onMove(e); }, {passive:false});
-  canvas.addEventListener('touchstart', e => { e.preventDefault(); onMove(e); onClick(e); }, {passive:false});
+
+  // Touch: drag to aim, lift to drop. Cancel if user dragged onto an existing
+  // body (treated as inspection — no drop).
+  let touchStart = null;
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if(gameOver) return;
+    UI.hideHover();
+    onMove(e); // sets dropX & hoverBody
+    touchStart = { x: dropX, t: performance.now(), inspect: !!hoverBody };
+  }, {passive:false});
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if(gameOver) return;
+    onMove(e);
+  }, {passive:false});
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    if(gameOver || !touchStart) { touchStart = null; return; }
+    const dt = performance.now() - touchStart.t;
+    // If user tapped directly on an existing body, treat as inspect
+    // (show hover briefly) instead of drop.
+    if(touchStart.inspect && dt < 500){
+      // Hover already shown via onMove
+      setTimeout(()=>UI.hideHover(), 1600);
+    } else {
+      tryDrop();
+      UI.hideHover();
+    }
+    touchStart = null;
+  }, {passive:false});
+  canvas.addEventListener('touchcancel', () => { touchStart = null; UI.hideHover(); });
 
   // Keyboard arrow nudging + space to drop
   document.addEventListener('keydown', e => {
@@ -482,16 +519,75 @@ const Game = (() => {
   }
 
   function restart(){
+    if(gameOverTimeoutId){ clearTimeout(gameOverTimeoutId); gameOverTimeoutId = 0; }
+    UI.closeModal('m-over');
+    UI.hideHover();
     score = 0; combo = 0; lastMergeAt = 0;
     maxLevelThisRun = 1;
     learnedThisRun = new Set();
     gameOver = false;
+    hoverBody = null;
+    bgPulse = 0;
+    dropX = WIDTH / 2;
+    lastDropAt = 0;
     nextLevel = pickSpawnLevel();
     buildWorld();
     UI.setScore(0);
     UI.setCombo(1);
     UI.renderChainList(chain, Storage.get().maxLevelReached);
     drawNextPreview();
+  }
+
+  /* ===== Responsive sizing ===== */
+  function syncAppHeight(){
+    // visualViewport.height is the actual visible area (excludes mobile chrome
+    // and software keyboard). innerHeight on iOS Safari can lie (returns the
+    // largest viewport height even when chrome is showing) — never trust it
+    // alone on touch devices.
+    const vv = window.visualViewport;
+    const h = vv ? vv.height : window.innerHeight;
+    document.documentElement.style.setProperty('--app-h', h + 'px');
+    // Also force html/body/.app to that exact pixel height so no CSS rule can
+    // override us. This is the final authority.
+    document.documentElement.style.height = h + 'px';
+    document.body.style.height = h + 'px';
+    const app = document.querySelector('.app');
+    if(app){ app.style.height = h + 'px'; }
+  }
+
+  function fitCanvasWrap(){
+    const stage = document.querySelector('.stage');
+    const wrap  = document.getElementById('canvas-wrap');
+    const sideL = document.querySelector('.side-l');
+    const sideR = document.querySelector('.side-r');
+    if(!stage || !wrap) return;
+    const cs = getComputedStyle(stage);
+    const isColumn = cs.flexDirection === 'column' || cs.flexDirection === 'column-reverse';
+    const gap = parseFloat(cs.rowGap || cs.gap) || parseFloat(cs.columnGap || cs.gap) || 6;
+
+    const lVisible = sideL && sideL.offsetParent !== null;
+    const rVisible = sideR && sideR.offsetParent !== null;
+    const lW = lVisible ? sideL.offsetWidth  : 0;
+    const lH = lVisible ? sideL.offsetHeight : 0;
+    const rW = rVisible ? sideR.offsetWidth  : 0;
+    const rH = rVisible ? sideR.offsetHeight : 0;
+
+    let availW, availH;
+    if(isColumn){
+      availW = Math.max(80, stage.clientWidth);
+      const sideHs = (lH > 0 ? lH + gap : 0) + (rH > 0 ? rH + gap : 0);
+      availH = Math.max(80, stage.clientHeight - sideHs);
+    } else {
+      const sideWs = (lW > 0 ? lW + gap : 0) + (rW > 0 ? rW + gap : 0);
+      availW = Math.max(80, stage.clientWidth - sideWs);
+      availH = Math.max(80, stage.clientHeight);
+    }
+    const ratio = WIDTH / HEIGHT; // 420/640
+    let w = availW;
+    let h = w / ratio;
+    if(h > availH){ h = availH; w = h * ratio; }
+    wrap.style.width  = Math.floor(w) + 'px';
+    wrap.style.height = Math.floor(h) + 'px';
   }
 
   /* ===== Boot ===== */
@@ -510,6 +606,10 @@ const Game = (() => {
       UI.setMuteIcon(m);
     });
     $('btn-help').addEventListener('click', () => UI.openModal('m-help'));
+    $('btn-tree').addEventListener('click', () => {
+      UI.renderChainList(chain, Storage.get().maxLevelReached);
+      UI.openModal('m-chain');
+    });
     $('btn-glossary').addEventListener('click', () => { UI.renderGlossary(); UI.openModal('m-glossary'); });
     // Modal buttons
     $('r-again').addEventListener('click', () => { UI.closeModal('m-over'); restart(); });
@@ -517,6 +617,27 @@ const Game = (() => {
 
     UI.setMuteIcon(Storage.get().muted);
     UI.setHi(Storage.get().highScore);
+    syncAppHeight();
+    fitCanvasWrap();
+    const onViewportChange = () => { syncAppHeight(); fitCanvasWrap(); };
+    // Also schedule a delayed re-sync to handle iOS Safari's lazy chrome
+    // animations (the URL bar slides in over ~200ms after page load).
+    const onViewportChangeDelayed = () => {
+      onViewportChange();
+      setTimeout(onViewportChange, 100);
+      setTimeout(onViewportChange, 350);
+      setTimeout(onViewportChange, 800);
+    };
+    window.addEventListener('resize', onViewportChange);
+    window.addEventListener('orientationchange', onViewportChangeDelayed);
+    window.addEventListener('pageshow', onViewportChangeDelayed);
+    window.addEventListener('focus', onViewportChange);
+    document.addEventListener('visibilitychange', onViewportChange);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', onViewportChange);
+      window.visualViewport.addEventListener('scroll',  onViewportChange);
+    }
+    onViewportChangeDelayed();
     setMode('normal');
     requestAnimationFrame(frame);
   }
