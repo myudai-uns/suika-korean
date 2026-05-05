@@ -542,9 +542,17 @@ const Game = (() => {
   function fitCanvasWrap(){
     const stage = document.querySelector('.stage');
     const wrap  = document.getElementById('canvas-wrap');
+    const tools = document.querySelector('.toolbar');
     const sideL = document.querySelector('.side-l');
     const sideR = document.querySelector('.side-r');
     if(!stage || !wrap) return;
+
+    // Reset previous explicit sizing so we measure stage's natural available
+    // space — otherwise we'd carry over a stale (possibly too-tall) value
+    // that already pushed the toolbar out of view.
+    wrap.style.width  = '';
+    wrap.style.height = '';
+
     const cs = getComputedStyle(stage);
     const isColumn = cs.flexDirection === 'column' || cs.flexDirection === 'column-reverse';
     const gap = parseFloat(cs.rowGap || cs.gap) || parseFloat(cs.columnGap || cs.gap) || 6;
@@ -570,6 +578,20 @@ const Game = (() => {
     let w = availW;
     let h = w / ratio;
     if(h > availH){ h = availH; w = h * ratio; }
+
+    // SAFETY NET — guarantee the resulting wrap rectangle stays inside the
+    // visible viewport (handles iOS Safari URL-bar overlay edge cases where
+    // CSS-computed available space can be optimistic).
+    const stageTop = stage.getBoundingClientRect().top;
+    const toolH = tools ? tools.offsetHeight : 0;
+    const toolMargin = tools ? parseFloat(getComputedStyle(tools).marginTop) || 0 : 0;
+    const safeBottom = (window.visualViewport ? window.visualViewport.height : window.innerHeight)
+                     - toolH - toolMargin - 4;
+    if(stageTop + h > safeBottom){
+      h = Math.max(80, safeBottom - stageTop);
+      w = h * ratio;
+    }
+
     wrap.style.width  = Math.floor(w) + 'px';
     wrap.style.height = Math.floor(h) + 'px';
   }

@@ -34,9 +34,8 @@ body{
 }
 
 .app{
-  /* Use the body's height (100svh on modern iOS) — natural flow is more
-     reliable than position:fixed on iOS Safari, where fixed elements can
-     extend beyond the visible viewport into chrome-covered areas. */
+  /* Without viewport-fit=cover, iOS Safari naturally insets the layout from
+     the URL bar overlay and safe areas — no manual env() padding needed. */
   position:relative;
   z-index:1;
   width:100%;
@@ -45,11 +44,7 @@ body{
   height:100%;
   max-height:100%;
   display:flex;flex-direction:column;
-  padding:
-    max(10px, env(safe-area-inset-top))
-    max(14px, env(safe-area-inset-right))
-    max(8px,  env(safe-area-inset-bottom))
-    max(14px, env(safe-area-inset-left));
+  padding:10px 14px 8px;
   overflow:hidden;
 }
 
@@ -251,7 +246,7 @@ body{
   /* Show the tree button only on mobile */
   #btn-tree{display:inline-flex;align-items:center;justify-content:center}
 
-  .app{padding:max(4px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left))}
+  .app{padding:6px 8px 6px}
   .head{margin-bottom:4px;gap:6px}
   .title{gap:6px;flex-shrink:1;min-width:0}
   .title h1{font-size:16px;letter-spacing:0;white-space:nowrap}
@@ -272,13 +267,12 @@ body{
      chain ladder lives in the m-chain modal */
   .side-l,.side-r{display:none}
 
-  /* Canvas takes 100% of remaining vertical space */
+  /* Canvas takes the remaining vertical space — flex:1 only, no explicit height */
   .canvas-wrap{
-    flex:1 1 auto;
+    flex:1 1 0;
     width:100%;
     max-width:100%;
-    height:100%;
-    max-height:100%;
+    min-height:0;
     align-self:center;
     border-width:3px;
     border-bottom-width:4px;
