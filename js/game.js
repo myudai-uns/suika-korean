@@ -588,6 +588,12 @@ const Game = (() => {
     let h = w / ratio;
     if(h > availH){ h = availH; w = h * ratio; }
 
+    // Scale to 70% of the natural fit so the container leaves visible margin
+    // around it (per user's explicit request to keep background visible).
+    const SCALE = 0.7;
+    w *= SCALE;
+    h *= SCALE;
+
     // SAFETY NET — guarantee the resulting wrap rectangle stays inside the
     // visible viewport (handles iOS Safari URL-bar overlay edge cases where
     // CSS-computed available space can be optimistic).

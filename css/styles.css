@@ -314,12 +314,12 @@ body{
     box-shadow:0 0 6px rgba(255,170,80,.9), inset 0 0 0 1px #fff;
   }
 
-  /* Canvas: hard caps ensure margin around the container is always visible */
+  /* Canvas: hard caps + 70% sizing leaves clear margin around the container */
   .canvas-wrap{
     flex:0 1 auto;
     width:auto;
-    max-width:calc(100% - 16px);
-    max-height:60svh;       /* never more than 60% of small viewport */
+    max-width:calc(70% - 16px);  /* 70% of stage width */
+    max-height:42svh;            /* 70% of 60svh */
     min-height:0;
     margin:auto;            /* center inside stage with visible breathing room */
     align-self:center;
