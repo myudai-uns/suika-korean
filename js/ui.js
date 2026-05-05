@@ -77,6 +77,19 @@ const UI = (() => {
     if(list) list.innerHTML = html;
     const modalList = $('chain-list-modal');
     if(modalList) modalList.innerHTML = html;
+
+    // Mobile compact dot tree
+    const tree = $('mi-tree');
+    if(tree){
+      let dots = '';
+      for(let i = 0; i < chain.length; i++){
+        const lv = i + 1;
+        const unlocked = lv <= maxReached;
+        const peak = lv === maxReached;
+        dots += `<span class="mi-dot ${unlocked?'unlocked':''} ${peak?'peak':''}" style="background:${PASTEL[i]}" title="Lv.${lv} ${unlocked?chain[i].word:'？？？'}"></span>`;
+      }
+      tree.innerHTML = dots;
+    }
   }
 
   function openModal(id){ $(id).classList.add('show'); }

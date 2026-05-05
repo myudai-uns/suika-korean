@@ -9,6 +9,8 @@ const Game = (() => {
   const ctx = canvas.getContext('2d');
   const nextCanvas = $('next-canvas');
   const nextCtx = nextCanvas.getContext('2d');
+  const miNextCanvas = $('mi-next-canvas');
+  const miNextCtx = miNextCanvas ? miNextCanvas.getContext('2d') : null;
 
   // World setup
   const WIDTH = canvas.width;
@@ -367,30 +369,37 @@ const Game = (() => {
     return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) };
   }
 
-  function drawNextPreview(){
-    const w = nextCanvas.width;
-    const h = nextCanvas.height;
-    nextCtx.clearRect(0, 0, w, h);
+  function drawNextOn(c, ctx2){
+    if(!c || !ctx2) return;
+    const w = c.width;
+    const h = c.height;
+    ctx2.clearRect(0, 0, w, h);
     const lv = nextLevel;
     const data = chain[lv - 1];
     const r = Math.min(RADII[lv-1], w*0.4);
     const cx = w/2, cy = h/2;
-    nextCtx.save();
-    const grad = nextCtx.createRadialGradient(cx-r*0.35, cy-r*0.4, r*0.1, cx, cy, r);
+    ctx2.save();
+    const grad = ctx2.createRadialGradient(cx-r*0.35, cy-r*0.4, r*0.1, cx, cy, r);
     const color = PASTEL[lv-1];
     grad.addColorStop(0, '#fff');
     grad.addColorStop(0.25, lighten(color, 0.15));
     grad.addColorStop(1, color);
-    nextCtx.beginPath();
-    nextCtx.arc(cx, cy, r, 0, Math.PI*2);
-    nextCtx.fillStyle = grad; nextCtx.fill();
-    nextCtx.strokeStyle = darken(color, 0.18); nextCtx.lineWidth = 2; nextCtx.stroke();
-    nextCtx.fillStyle = darken(color, 0.55);
-    const fs = fitFontSizeOn(nextCtx, data.word, r*1.7, r*0.55);
-    nextCtx.font = `900 ${fs}px "Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif`;
-    nextCtx.textAlign = 'center'; nextCtx.textBaseline = 'middle';
-    nextCtx.fillText(data.word, cx, cy);
-    nextCtx.restore();
+    ctx2.beginPath();
+    ctx2.arc(cx, cy, r, 0, Math.PI*2);
+    ctx2.fillStyle = grad; ctx2.fill();
+    ctx2.strokeStyle = darken(color, 0.18); ctx2.lineWidth = 2; ctx2.stroke();
+    ctx2.fillStyle = darken(color, 0.55);
+    const fs = fitFontSizeOn(ctx2, data.word, r*1.7, r*0.55);
+    ctx2.font = `900 ${fs}px "Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif`;
+    ctx2.textAlign = 'center'; ctx2.textBaseline = 'middle';
+    ctx2.fillText(data.word, cx, cy);
+    ctx2.restore();
+  }
+  function drawNextPreview(){
+    drawNextOn(nextCanvas, nextCtx);
+    drawNextOn(miNextCanvas, miNextCtx);
+    const w = $('mi-next-word');
+    if(w) w.textContent = chain[nextLevel - 1].word;
   }
   function fitFontSizeOn(c, text, maxWidth, baseSize){
     let s = baseSize;
@@ -616,6 +625,13 @@ const Game = (() => {
       UI.renderChainList(chain, Storage.get().maxLevelReached);
       UI.openModal('m-chain');
     });
+    const miTree = $('mi-tree');
+    if(miTree){
+      miTree.addEventListener('click', () => {
+        UI.renderChainList(chain, Storage.get().maxLevelReached);
+        UI.openModal('m-chain');
+      });
+    }
     $('btn-glossary').addEventListener('click', () => { UI.renderGlossary(); UI.openModal('m-glossary'); });
     // Modal buttons
     $('r-again').addEventListener('click', () => { UI.closeModal('m-over'); restart(); });

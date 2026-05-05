@@ -225,6 +225,9 @@ body{
 /* Tree button hidden by default — only shown on mobile */
 #btn-tree{display:none}
 
+/* Mobile-only compact info bar (hidden on desktop) */
+.mobile-info{display:none}
+
 /* Responsive */
 @media (max-width: 760px){
   .side-l,.side-r{width:110px}
@@ -263,22 +266,69 @@ body{
   /* Stack vertically; canvas takes ALL remaining vertical space */
   .stage{flex-direction:column;gap:4px;align-items:stretch;overflow:visible}
 
-  /* Hide both side panels — NEXT is redundant with the canvas drop-guide ghost,
-     chain ladder lives in the m-chain modal */
+  /* Hide both side panels — replaced by .mobile-info compact bar above */
   .side-l,.side-r{display:none}
 
-  /* Canvas takes the remaining vertical space — flex:1 only, no explicit height */
+  /* Compact info bar: NEXT preview + 11-dot 合体ツリー progress */
+  .mobile-info{
+    display:flex;align-items:center;gap:8px;
+    padding:4px 8px;margin-bottom:4px;
+    background:rgba(255,255,255,.55);
+    border:1.5px solid #ffd2e1;
+    border-radius:14px;
+    flex-shrink:0;
+  }
+  .mi-next{
+    display:flex;align-items:center;gap:4px;
+    flex-shrink:0;
+  }
+  .mi-next-label{
+    font-size:8px;font-weight:900;color:#c43e6e;letter-spacing:1px;
+  }
+  #mi-next-canvas{width:30px;height:30px;border-radius:50%;background:#fff7fa}
+  .mi-next-word{
+    font-size:11px;font-weight:900;color:#c43e6e;
+    max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .mi-tree{
+    display:flex;align-items:center;gap:3px;
+    flex:1;justify-content:flex-end;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .mi-tree::-webkit-scrollbar{display:none}
+  .mi-dot{
+    width:13px;height:13px;border-radius:50%;
+    border:1.5px solid rgba(0,0,0,.08);
+    flex-shrink:0;
+    opacity:.35;
+    filter:grayscale(.6);
+  }
+  .mi-dot.unlocked{
+    opacity:1;filter:none;
+    box-shadow:0 0 4px rgba(255,255,255,.7);
+  }
+  .mi-dot.peak{
+    transform:scale(1.25);
+    box-shadow:0 0 6px rgba(255,170,80,.9), inset 0 0 0 1px #fff;
+  }
+
+  /* Canvas: hard caps ensure margin around the container is always visible */
   .canvas-wrap{
-    flex:1 1 0;
-    width:100%;
-    max-width:100%;
+    flex:0 1 auto;
+    width:auto;
+    max-width:calc(100% - 16px);
+    max-height:60svh;       /* never more than 60% of small viewport */
     min-height:0;
+    margin:auto;            /* center inside stage with visible breathing room */
     align-self:center;
     border-width:3px;
     border-bottom-width:4px;
     border-radius:16px;
     box-shadow:0 4px 0 #e190b9, 0 6px 14px rgba(196,62,110,.18);
   }
+  .stage{padding:6px 0}
 
   /* Toolbar pinned to viewport bottom on mobile — survives ANY iOS Safari
      URL-bar / chrome quirk. position:fixed with bottom:0 always sits above
