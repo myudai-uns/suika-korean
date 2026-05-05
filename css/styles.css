@@ -280,13 +280,27 @@ body{
     box-shadow:0 4px 0 #e190b9, 0 6px 14px rgba(196,62,110,.18);
   }
 
-  /* Toolbar guaranteed to fit on a single row via tight buttons */
-  .toolbar{gap:4px;margin-top:4px;flex-wrap:nowrap}
+  /* Toolbar pinned to viewport bottom on mobile — survives ANY iOS Safari
+     URL-bar / chrome quirk. position:fixed with bottom:0 always sits above
+     the URL bar overlay (when viewport-fit is auto). */
+  .toolbar{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    margin:0;
+    padding:6px max(6px,env(safe-area-inset-left)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-right));
+    gap:4px;
+    flex-wrap:nowrap;
+    background:linear-gradient(180deg,rgba(255,233,214,0) 0%,rgba(255,222,201,0.92) 60%);
+    z-index:50;
+    backdrop-filter:blur(4px);
+  }
   .tool-btn{
     padding:7px 4px;font-size:10px;border-radius:10px;
     flex:1 1 0;min-width:0;border-bottom-width:3px;
     white-space:nowrap;letter-spacing:-.5px;
   }
+  /* Reserve space inside .app so the canvas doesn't sit under the fixed toolbar */
+  .app{ padding-bottom:calc(48px + max(6px,env(safe-area-inset-bottom))) }
 
   /* Hover card readable on mobile */
   .hover-card{font-size:13px;max-width:80vw;white-space:normal}

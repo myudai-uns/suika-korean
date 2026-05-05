@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>한글수박 · ハングルすいか</title>
-<link rel="stylesheet" href="css/styles.css?v=5">
+<link rel="stylesheet" href="css/styles.css?v=6">
 </head>
 <body>
 <div class="bg-deco"><span>🍉</span><span>🥝</span><span>🍑</span><span>🍓</span><span>🍇</span><span>🍒</span><span>🍊</span><span>🍋</span></div>
@@ -144,10 +144,36 @@
   </div>
 </div>
 
-<script src="js/data.js?v=5"></script>
-<script src="js/storage.js?v=5"></script>
-<script src="js/physics.js?v=5"></script>
-<script src="js/ui.js?v=5"></script>
-<script src="js/game.js?v=5"></script>
+<script src="js/data.js?v=6"></script>
+<script src="js/storage.js?v=6"></script>
+<script src="js/physics.js?v=6"></script>
+<script src="js/ui.js?v=6"></script>
+<script src="js/game.js?v=6"></script>
+<div id="debug-vp" style="position:fixed;top:0;left:0;background:rgba(0,0,0,.75);color:#0f0;font:11px monospace;padding:4px 6px;z-index:9999;pointer-events:none;display:none"></div>
+<script>
+  // Debug overlay: show ?debug=1 in URL to see live viewport measurements
+  if(/[?&]debug=1/.test(location.search)){
+    var d = document.getElementById('debug-vp');
+    d.style.display = 'block';
+    function upd(){
+      var vv = window.visualViewport;
+      var w = document.querySelector('.canvas-wrap');
+      var t = document.querySelector('.toolbar');
+      var wb = w ? Math.round(w.getBoundingClientRect().bottom) : '?';
+      var tb = t ? Math.round(t.getBoundingClientRect().bottom) : '?';
+      d.textContent =
+        'iH:'+window.innerHeight+
+        ' vvH:'+(vv?Math.round(vv.height):'-')+
+        ' clH:'+document.documentElement.clientHeight+
+        ' app:'+document.querySelector('.app').offsetHeight+
+        ' wB:'+wb+' tB:'+tb;
+    }
+    upd(); setInterval(upd, 200);
+    if(vv = window.visualViewport){
+      vv.addEventListener('resize', upd);
+      vv.addEventListener('scroll', upd);
+    }
+  }
+</script>
 </body>
 </html>
