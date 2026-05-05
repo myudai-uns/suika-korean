@@ -539,22 +539,6 @@ const Game = (() => {
   }
 
   /* ===== Responsive sizing ===== */
-  function syncAppHeight(){
-    // visualViewport.height is the actual visible area (excludes mobile chrome
-    // and software keyboard). innerHeight on iOS Safari can lie (returns the
-    // largest viewport height even when chrome is showing) — never trust it
-    // alone on touch devices.
-    const vv = window.visualViewport;
-    const h = vv ? vv.height : window.innerHeight;
-    document.documentElement.style.setProperty('--app-h', h + 'px');
-    // Also force html/body/.app to that exact pixel height so no CSS rule can
-    // override us. This is the final authority.
-    document.documentElement.style.height = h + 'px';
-    document.body.style.height = h + 'px';
-    const app = document.querySelector('.app');
-    if(app){ app.style.height = h + 'px'; }
-  }
-
   function fitCanvasWrap(){
     const stage = document.querySelector('.stage');
     const wrap  = document.getElementById('canvas-wrap');
@@ -617,27 +601,22 @@ const Game = (() => {
 
     UI.setMuteIcon(Storage.get().muted);
     UI.setHi(Storage.get().highScore);
-    syncAppHeight();
     fitCanvasWrap();
-    const onViewportChange = () => { syncAppHeight(); fitCanvasWrap(); };
-    // Also schedule a delayed re-sync to handle iOS Safari's lazy chrome
-    // animations (the URL bar slides in over ~200ms after page load).
-    const onViewportChangeDelayed = () => {
+    // CSS 100svh handles app height. We just need to refit the canvas when
+    // the viewport actually changes (rotation, keyboard, chrome show/hide).
+    const onViewportChange = () => fitCanvasWrap();
+    const refitDelayed = () => {
       onViewportChange();
       setTimeout(onViewportChange, 100);
       setTimeout(onViewportChange, 350);
-      setTimeout(onViewportChange, 800);
     };
     window.addEventListener('resize', onViewportChange);
-    window.addEventListener('orientationchange', onViewportChangeDelayed);
-    window.addEventListener('pageshow', onViewportChangeDelayed);
-    window.addEventListener('focus', onViewportChange);
-    document.addEventListener('visibilitychange', onViewportChange);
+    window.addEventListener('orientationchange', refitDelayed);
+    window.addEventListener('pageshow', refitDelayed);
     if(window.visualViewport){
       window.visualViewport.addEventListener('resize', onViewportChange);
-      window.visualViewport.addEventListener('scroll',  onViewportChange);
     }
-    onViewportChangeDelayed();
+    refitDelayed();
     setMode('normal');
     requestAnimationFrame(frame);
   }
