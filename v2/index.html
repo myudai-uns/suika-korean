@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>한글수박 v2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <header class="head">
+    <div class="title"><span class="logo">🍉</span><h1>한글수박</h1></div>
+    <div class="scores">
+      <div class="sc"><span>SCORE</span><b id="score">0</b></div>
+      <div class="sc small"><span>BEST</span><b id="best">0</b></div>
+    </div>
+  </header>
+
+  <nav class="modes">
+    <button class="m active" data-mode="normal">ノーマル</button>
+    <button class="m" data-mode="kpop">K-POP</button>
+    <button class="m" data-mode="daily">デイリー</button>
+    <button class="m" data-mode="review">復習</button>
+  </nav>
+
+  <section class="info">
+    <div class="next">
+      <span>NEXT</span>
+      <canvas id="next-canvas" width="50" height="50"></canvas>
+      <b id="next-word"></b>
+    </div>
+    <div class="combo" id="combo">×<span id="combo-n">1</span></div>
+    <div class="tree" id="tree" title="合体ツリー"></div>
+  </section>
+
+  <main class="board" id="board">
+    <canvas id="game" width="420" height="640"></canvas>
+  </main>
+
+</div>
+
+<footer class="tools" id="tools">
+  <button id="b-reset">🔄 リセット</button>
+  <button id="b-mute">🔊</button>
+  <button id="b-help">❓</button>
+  <button id="b-glossary">📖</button>
+</footer>
+
+<div class="popups" id="popups"></div>
+<div class="hover" id="hover"></div>
+
+<!-- Modals -->
+<div class="modal" id="m-over"><div class="card">
+  <div class="emoji">💥</div><h2>ゲームオーバー</h2>
+  <div class="r-row">
+    <div class="rc"><span>SCORE</span><b id="r-score">0</b></div>
+    <div class="rc"><span>BEST</span><b id="r-best">0</b></div>
+    <div class="rc"><span>最大Lv</span><b id="r-max">1</b></div>
+  </div>
+  <p class="ll">今回触れた単語: <span id="r-learned">0</span> 語</p>
+  <div class="bts">
+    <button class="bp" id="r-again">もう一度</button>
+    <button class="bs" id="r-glossary">学んだ単語</button>
+  </div>
+</div></div>
+
+<div class="modal" id="m-help"><div class="card">
+  <div class="emoji">📖</div><h2>遊び方</h2>
+  <ul class="hl">
+    <li><b>タップ／クリック</b>で単語を落とす</li>
+    <li>同じ単語が触れると<b>合体</b>して進化</li>
+    <li>連続合体で<b>コンボ</b>スコア倍増</li>
+    <li>赤い線を超えるとゲームオーバー</li>
+    <li>合体後の単語にタップ／ホバーで意味と発音表示</li>
+  </ul>
+  <h3>モード</h3>
+  <ul class="hl">
+    <li>ノーマル: 韓国語頻出単語</li>
+    <li>K-POP: K-POP定番フレーズ</li>
+    <li>デイリー: 固定シードで毎日同じ並び</li>
+    <li>復習: 過去未習得語が多めに出現</li>
+  </ul>
+  <button class="bp" onclick="UI.close('m-help')">閉じる</button>
+</div></div>
+
+<div class="modal" id="m-tree"><div class="card">
+  <div class="emoji">🌳</div><h2>合体ツリー</h2>
+  <div class="cl" id="chain-list"></div>
+  <button class="bp" onclick="UI.close('m-tree')">閉じる</button>
+</div></div>
+
+<div class="modal" id="m-glossary"><div class="card big">
+  <div class="emoji">📚</div><h2>学んだ単語</h2>
+  <div class="gs" id="g-stats"></div>
+  <div class="gl" id="glossary-list"></div>
+  <button class="bp" onclick="UI.close('m-glossary')">閉じる</button>
+</div></div>
+
+<script src="script.js"></script>
+</body>
+</html>
