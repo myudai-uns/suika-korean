@@ -473,21 +473,21 @@ const Game = (()=>{
   }
 
   /* ===== Input ===== */
-  function relX(e){
-    const r=canvas.getBoundingClientRect();
-    const t=e.touches?e.touches[0]:e;
-    return Math.max(0,Math.min(WIDTH,(t.clientX-r.left)*(canvas.width/r.width)));
-  }
   function onMove(e){
-    dropX=relX(e);
-    const r=canvas.getBoundingClientRect();
     const t=e.touches?e.touches[0]:e;
+    const r=canvas.getBoundingClientRect();
     const cx=(t.clientX-r.left)*(canvas.width/r.width);
     const cy=(t.clientY-r.top)*(canvas.height/r.height);
+    // dropX is always derived from touch x, clamped to canvas internal range
+    // (so touches outside canvas left/right snap to the corresponding edge)
+    dropX=Math.max(0,Math.min(WIDTH,cx));
+    // Hover detection only when actually inside canvas
     let f=null;
-    for(const b of world.bodies){
-      const dx=b.x-cx, dy=b.y-cy;
-      if(dx*dx+dy*dy<b.r*b.r){f=b;break}
+    if(cx>=0 && cx<=WIDTH && cy>=0 && cy<=HEIGHT){
+      for(const b of world.bodies){
+        const dx=b.x-cx, dy=b.y-cy;
+        if(dx*dx+dy*dy<b.r*b.r){f=b;break}
+      }
     }
     hoverBody=f;
     if(f && cy>SPAWN_Y+60){
@@ -495,14 +495,40 @@ const Game = (()=>{
       UI.showHover(r.left+f.x*sx, r.top+(f.y-f.r)*sy, f);
     } else UI.hideHover();
   }
+  // True if event target is an interactive UI element that should NOT trigger
+  // a drop (buttons, modals, mode tabs, info bar buttons).
+  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .modes, .tools, .info'));
+
+  // Mouse: keep the canvas-only behavior (cursor doesn't obscure view)
   canvas.addEventListener('mousemove',onMove);
   canvas.addEventListener('mouseleave',()=>UI.hideHover());
-  canvas.addEventListener('mousedown',e=>{if(gameOver)return;e.preventDefault();dropX=relX(e);tryDrop()});
+  canvas.addEventListener('mousedown',e=>{if(gameOver)return;e.preventDefault();onMove(e);tryDrop()});
+
+  // Touch: capture anywhere on the document so the player can drag/aim with
+  // a finger BELOW or BESIDE the canvas — keeping the play area unobscured.
   let touchStart=null;
-  canvas.addEventListener('touchstart',e=>{e.preventDefault();if(gameOver)return;UI.hideHover();onMove(e);touchStart={t:performance.now(),inspect:!!hoverBody}},{passive:false});
-  canvas.addEventListener('touchmove', e=>{e.preventDefault();if(gameOver)return;onMove(e)},{passive:false});
-  canvas.addEventListener('touchend',  e=>{e.preventDefault();if(gameOver||!touchStart){touchStart=null;return}const dt=performance.now()-touchStart.t;if(touchStart.inspect && dt<500){setTimeout(()=>UI.hideHover(),1600)}else{tryDrop();UI.hideHover()}touchStart=null},{passive:false});
-  canvas.addEventListener('touchcancel',()=>{touchStart=null;UI.hideHover()});
+  document.addEventListener('touchstart',e=>{
+    if(gameOver) return;
+    if(isUI(e.target)) return;          // let UI handle its own taps
+    e.preventDefault();
+    UI.hideHover();
+    onMove(e);
+    touchStart={t:performance.now(),inspect:!!hoverBody};
+  },{passive:false});
+  document.addEventListener('touchmove',e=>{
+    if(gameOver||!touchStart) return;
+    e.preventDefault();
+    onMove(e);
+  },{passive:false});
+  document.addEventListener('touchend',e=>{
+    if(gameOver||!touchStart){touchStart=null; return;}
+    e.preventDefault();
+    const dt=performance.now()-touchStart.t;
+    if(touchStart.inspect && dt<500){setTimeout(()=>UI.hideHover(),1600);}
+    else{tryDrop(); UI.hideHover();}
+    touchStart=null;
+  },{passive:false});
+  document.addEventListener('touchcancel',()=>{touchStart=null; UI.hideHover();});
   document.addEventListener('keydown',e=>{
     if(gameOver) return;
     if(e.key==='ArrowLeft')  dropX=Math.max(0,dropX-16);
