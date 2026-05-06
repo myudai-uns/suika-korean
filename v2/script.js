@@ -275,7 +275,7 @@ const Game = (()=>{
   const CEILING=90, SPAWN_Y=50, COMBO_TIMEOUT=1400;
 
   // Visual scale of canvas relative to natural fit (leaves background margin)
-  const SCALE=0.7;
+  const SCALE=0.85;
 
   let world, mode='normal', chain=CHAINS.normal, rng=Math.random;
   let score=0, combo=0, lastMergeAt=0;
