@@ -11,12 +11,20 @@
 <div class="app" id="app">
 
   <header class="head">
+    <button class="b-menu" id="b-menu" aria-label="メニュー">☰</button>
     <div class="title"><span class="logo">🍉</span><h1>한글수박</h1></div>
     <div class="scores">
       <div class="sc"><span>SCORE</span><b id="score">0</b></div>
       <div class="sc small"><span>BEST</span><b id="best">0</b></div>
     </div>
   </header>
+
+  <nav class="menu" id="menu" aria-hidden="true">
+    <button id="b-reset">🔄 リセット</button>
+    <button id="b-mute">🔊 音声</button>
+    <button id="b-help">❓ 遊び方</button>
+    <button id="b-glossary">📖 学んだ単語</button>
+  </nav>
 
   <nav class="modes">
     <button class="m active" data-mode="normal">ノーマル</button>
@@ -40,13 +48,6 @@
   </main>
 
 </div>
-
-<footer class="tools" id="tools">
-  <button id="b-reset">🔄 リセット</button>
-  <button id="b-mute">🔊</button>
-  <button id="b-help">❓</button>
-  <button id="b-glossary">📖</button>
-</footer>
 
 <div class="popups" id="popups"></div>
 <div class="hover" id="hover"></div>

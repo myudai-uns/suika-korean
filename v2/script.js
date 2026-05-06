@@ -210,7 +210,7 @@ const UI = (()=>{
     requestAnimationFrame(loop);
   }
   function setNextWord(w){const e=$('next-word'); if(e) e.textContent=w||''}
-  function setMute(m){$('b-mute').textContent = m?'🔇':'🔊'}
+  function setMute(m){$('b-mute').textContent = (m?'🔇':'🔊') + ' 音声'}
   function renderTree(chain,maxLv){
     const t=$('tree'); if(!t) return;
     let h='';
@@ -497,7 +497,7 @@ const Game = (()=>{
   }
   // True if event target is an interactive UI element that should NOT trigger
   // a drop (buttons, modals, mode tabs, info bar buttons).
-  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .modes, .tools, .info'));
+  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .modes, .menu, .info'));
 
   // Mouse: keep the canvas-only behavior (cursor doesn't obscure view)
   canvas.addEventListener('mousemove',onMove);
@@ -559,13 +559,6 @@ const Game = (()=>{
 
   /* ===== Responsive sizing — JS-driven for guaranteed fit ===== */
   function syncLayout(){
-    // Use innerHeight (most reliable across iOS Safari quirks)
-    const vh = window.innerHeight;
-    const tools = document.getElementById('tools');
-    const toolsH = tools ? tools.offsetHeight : 56;
-    const app = document.getElementById('app');
-    if(app) app.style.bottom = toolsH + 'px';
-    // Compute board's own size and fit canvas there
     const board = document.getElementById('board');
     if(!board) return;
     const availW = board.clientWidth;
@@ -581,10 +574,30 @@ const Game = (()=>{
   /* ===== Boot ===== */
   function init(){
     document.querySelectorAll('.m').forEach(b=>b.addEventListener('click',()=>setMode(b.getAttribute('data-mode'))));
-    $('b-reset').addEventListener('click',()=>{if(confirm('リセットしますか？')) restart()});
-    $('b-mute').addEventListener('click',()=>UI.setMute(Storage.toggleMute()));
-    $('b-help').addEventListener('click',()=>UI.open('m-help'));
-    $('b-glossary').addEventListener('click',()=>{UI.renderGlossary();UI.open('m-glossary')});
+
+    // Hamburger menu toggle + close-on-outside
+    const menu = $('menu');
+    const closeMenu = () => menu.classList.remove('show');
+    $('b-menu').addEventListener('click', e=>{
+      e.stopPropagation();
+      menu.classList.toggle('show');
+    });
+    document.addEventListener('click', e=>{
+      if(menu.classList.contains('show') && !menu.contains(e.target) && e.target.id !== 'b-menu'){
+        closeMenu();
+      }
+    });
+    document.addEventListener('touchstart', e=>{
+      if(menu.classList.contains('show') && !menu.contains(e.target) && e.target.id !== 'b-menu'){
+        closeMenu();
+      }
+    }, {passive:true});
+
+    $('b-reset').addEventListener('click',()=>{closeMenu(); if(confirm('リセットしますか？')) restart()});
+    $('b-mute').addEventListener('click',()=>{closeMenu(); UI.setMute(Storage.toggleMute())});
+    $('b-help').addEventListener('click',()=>{closeMenu(); UI.open('m-help')});
+    $('b-glossary').addEventListener('click',()=>{closeMenu(); UI.renderGlossary(); UI.open('m-glossary')});
+
     $('tree').addEventListener('click',()=>{UI.renderChainList(chain,Storage.get().maxLevelReached);UI.open('m-tree')});
     $('r-again').addEventListener('click',()=>{UI.close('m-over');restart()});
     $('r-glossary').addEventListener('click',()=>{UI.close('m-over');UI.renderGlossary();UI.open('m-glossary')});
