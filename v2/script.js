@@ -72,7 +72,9 @@ class World {
     this.w=o.width; this.h=o.height;
     this.gravity=o.gravity??0.55;
     this.airDamp=0.9985; this.angularDamp=0.92; this.angularMax=0.18;
-    this.restitution=0.18; this.friction=0.4;
+    this.restitution=0.18;
+    this.friction=0.15;       // body-body tangential friction (lower = more slide)
+    this.mergeRange=1.08;     // merge fires when distance < (rA+rB) * mergeRange
     this.ceiling=o.ceiling??80;
     this.bodies=[]; this.solverIter=4;
     this.events={merge:[],ceiling:[]};
@@ -107,10 +109,12 @@ class World {
           const b=B[j]; if(b.frozen) continue;
           const dx=b.x-a.x, dy=b.y-a.y;
           const d2=dx*dx+dy*dy, md=a.r+b.r;
-          if(d2>=md*md) continue;
+          const mergeR=md*this.mergeRange;
+          // Skip entirely if too far for both merge and collision
+          if(d2>=mergeR*mergeR) continue;
           const dist=Math.sqrt(d2)||0.0001;
           const nx=dx/dist, ny=dy/dist;
-          const overlap=md-dist;
+          // Merge check uses the loosened mergeRange (fires before tight contact)
           if(it===this.solverIter-1 && a.level===b.level
              && !a.markedForRemoval && !b.markedForRemoval
              && a.scale>0.7 && b.scale>0.7){
@@ -118,6 +122,9 @@ class World {
             if(a.markedForRemoval) break;
             continue;
           }
+          // Collision response only when actually overlapping
+          if(d2>=md*md) continue;
+          const overlap=md-dist;
           const ti=a.invMass+b.invMass||1;
           a.x-=nx*(overlap*(a.invMass/ti)); a.y-=ny*(overlap*(a.invMass/ti));
           b.x+=nx*(overlap*(b.invMass/ti)); b.y+=ny*(overlap*(b.invMass/ti));
