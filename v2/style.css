@@ -258,6 +258,96 @@ body{
 .gi i{color:#7a5b6e;font-weight:700;display:block;margin-top:2px;font-style:normal}
 .gi em{font-size:8px;color:#aaa;font-weight:900;display:block;margin-top:2px;letter-spacing:1px;font-style:normal}
 
+/* ===== Quiz overlay (3-choice on drop) ===== */
+.quiz{
+  position:fixed;inset:0;display:none;
+  align-items:flex-end;justify-content:center;
+  z-index:90;
+  background:rgba(58,42,58,.35);
+  backdrop-filter:blur(3px);
+  padding:0 10px env(safe-area-inset-bottom,0px);
+  animation:fadeIn .15s;
+}
+.quiz.show{display:flex}
+.quiz-card{
+  width:100%;max-width:520px;
+  background:linear-gradient(180deg,#fff,#fff7fa);
+  border:3px solid #ffaecf;border-bottom-width:5px;border-radius:20px 20px 0 0;
+  padding:14px 12px max(14px,env(safe-area-inset-bottom,12px));
+  box-shadow:0 -8px 24px rgba(196,62,110,.18);
+  animation:quizUp .22s cubic-bezier(.2,1.5,.4,1);
+}
+@keyframes quizUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.quiz-q{text-align:center;margin-bottom:12px}
+.quiz-label{display:block;font-size:11px;font-weight:900;color:#a04f74;letter-spacing:1px;margin-bottom:4px}
+.quiz-q b{
+  display:inline-block;font-size:30px;font-weight:900;color:#c43e6e;
+  background:#fff7fa;border:2px solid #ffd2e1;border-radius:14px;
+  padding:6px 18px;text-shadow:0 1px 0 #fff;
+}
+.quiz-opts{display:flex;flex-direction:column;gap:8px}
+.quiz-opt{
+  background:#fff;border:2px solid #ffc8db;border-bottom-width:4px;color:#3a2a3a;
+  border-radius:14px;padding:14px;font-size:16px;font-weight:900;cursor:pointer;
+  width:100%;text-align:center;line-height:1.3;
+  transition:transform .08s, background .15s;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+.quiz-opt:active{transform:translateY(2px);border-bottom-width:2px;background:#fff7fa}
+.quiz-opt.correct{background:linear-gradient(180deg,#baffc9,#7ee9a0);border-color:#3fa563;color:#0e5c2a}
+.quiz-opt.wrong{background:linear-gradient(180deg,#ffd2d2,#ffa3a3);border-color:#d65a5a;color:#6c1818}
+.quiz-opt.dim{opacity:.45}
+
+/* ===== Custom word lists ===== */
+.custom-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;margin:8px 0 12px;padding:2px}
+.cl-row{
+  display:flex;align-items:center;gap:8px;
+  background:#fff7fa;border:2px solid #ffe2ee;border-radius:12px;
+  padding:8px 10px;cursor:pointer;
+}
+.cl-row:active{background:#ffe2ee}
+.cl-row.empty{justify-content:center;color:#a04f74;font-weight:900;font-size:12px;cursor:default;background:#fff;border-style:dashed}
+.cl-row b{flex:1;font-size:14px;font-weight:900;color:#c43e6e;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-row em{font-size:10px;color:#7a5b6e;font-weight:700;font-style:normal}
+.cl-row .cl-edit{
+  background:#fff;border:2px solid #ffc8db;border-bottom-width:3px;color:#a04f74;
+  border-radius:8px;padding:5px 10px;font-weight:900;font-size:11px;cursor:pointer;
+  flex-shrink:0;
+}
+.cl-row .cl-edit:active{transform:translateY(1px);border-bottom-width:2px}
+
+/* ===== Custom edit form ===== */
+.ce-name{
+  width:100%;font-size:16px;font-weight:900;color:#3a2a3a;
+  background:#fff7fa;border:2px solid #ffc8db;border-radius:12px;
+  padding:10px 12px;margin-bottom:8px;
+  font-family:inherit;
+}
+.ce-name:focus{outline:none;border-color:#ff6fa1;background:#fff}
+.ce-words{display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow-y:auto;margin-bottom:8px;padding:2px}
+.ce-word-row{
+  display:flex;gap:6px;align-items:center;
+  background:#fff7fa;border:2px solid #ffe2ee;border-radius:12px;padding:6px;
+}
+.ce-lv{font-size:10px;font-weight:900;color:#a64b00;width:30px;text-align:center;flex-shrink:0}
+.ce-word-row input{
+  flex:1;min-width:0;font-size:14px;font-weight:900;color:#3a2a3a;
+  background:#fff;border:1.5px solid #ffd2e1;border-radius:8px;
+  padding:6px 8px;font-family:inherit;
+}
+.ce-word-row input.meaning{font-weight:700;color:#7a5b6e;font-size:13px}
+.ce-word-row input:focus{outline:none;border-color:#ff6fa1}
+.ce-rm{
+  background:#fff;border:2px solid #ffc8db;color:#c43e6e;
+  border-radius:8px;width:28px;height:28px;font-weight:900;font-size:14px;cursor:pointer;flex-shrink:0;
+}
+.ce-rm:active{background:#ffe2ee}
+.ce-del{
+  width:100%;background:transparent;border:none;color:#c43e6e;
+  margin-top:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;text-decoration:underline;
+}
+
 /* ===========================================================
  * Responsive breakpoints
  * =========================================================== */

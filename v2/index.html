@@ -31,6 +31,9 @@
     <button class="m" data-mode="kpop">K-POP</button>
     <button class="m" data-mode="daily">デイリー</button>
     <button class="m" data-mode="review">復習</button>
+    <button class="m" data-mode="hanja">漢数詞</button>
+    <button class="m" data-mode="goyu">固有数詞</button>
+    <button class="m" data-mode="custom">📝 自作</button>
   </nav>
 
   <section class="info">
@@ -82,6 +85,15 @@
     <li>K-POP: K-POP定番フレーズ</li>
     <li>デイリー: 固定シードで毎日同じ並び</li>
     <li>復習: 過去未習得語が多めに出現</li>
+    <li>漢数詞: 일/이/삼… 中国系の数詞</li>
+    <li>固有数詞: 하나/둘/셋… 韓国固有の数詞</li>
+    <li>自作: 自分で作った単語リストで遊ぶ</li>
+  </ul>
+  <h3>3択クイズ</h3>
+  <ul class="hl">
+    <li>果物を落とす瞬間に<b>韓国語→日本語</b>の3択が出題</li>
+    <li>正解 → 通常の果物として落下</li>
+    <li>不正解 → グレーの「失敗果物」として落下（合体不可・残り続ける）</li>
   </ul>
   <button class="bp" onclick="UI.close('m-help')">閉じる</button>
 </div></div>
@@ -98,6 +110,42 @@
   <div class="gl" id="glossary-list"></div>
   <button class="bp" onclick="UI.close('m-glossary')">閉じる</button>
 </div></div>
+
+<!-- 自作単語リスト管理 -->
+<div class="modal" id="m-custom"><div class="card big">
+  <div class="emoji">📝</div><h2>自作単語リスト</h2>
+  <p class="ll">あなたが作ったリストを選んでプレイ。リストは端末に保存されます。</p>
+  <div class="custom-list" id="custom-list"></div>
+  <div class="bts">
+    <button class="bp" id="b-custom-new">＋ 新しいリスト</button>
+    <button class="bs" onclick="UI.close('m-custom')">閉じる</button>
+  </div>
+</div></div>
+
+<!-- 自作リスト編集 -->
+<div class="modal" id="m-custom-edit"><div class="card big">
+  <div class="emoji">✏️</div><h2 id="ce-title">リスト編集</h2>
+  <input id="ce-name" type="text" placeholder="リスト名（例：私の単語）" class="ce-name">
+  <p class="ll">下から順に Lv.1 → Lv.10 として登場します。最低3語、最大10語。</p>
+  <div class="ce-words" id="ce-words"></div>
+  <button class="bs" id="ce-add">＋ 単語を追加</button>
+  <div class="bts">
+    <button class="bp" id="ce-save">保存して使う</button>
+    <button class="bs" id="ce-cancel">キャンセル</button>
+  </div>
+  <button class="ce-del" id="ce-delete">このリストを削除</button>
+</div></div>
+
+<!-- 落下前 3択クイズ -->
+<div class="quiz" id="quiz" aria-hidden="true">
+  <div class="quiz-card">
+    <div class="quiz-q">
+      <span class="quiz-label">この単語の意味は？</span>
+      <b id="quiz-word"></b>
+    </div>
+    <div class="quiz-opts" id="quiz-opts"></div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>

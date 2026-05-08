@@ -45,7 +45,34 @@ const CHAIN_DAILY = [
   {word:'데일리 클리어 ⭐',       meaning:'デイリークリア',   roma:'daily clear'},
   {word:'한국 ULTIMATE 👑',       meaning:'韓国アルティメット',roma:'hanguk ultimate'},
 ];
-const CHAINS = { normal:CHAIN_NORMAL, kpop:CHAIN_KPOP, daily:CHAIN_DAILY, review:CHAIN_NORMAL };
+const CHAIN_HANJA = [
+  {word:'일',  meaning:'1（イル）',  roma:'il'},
+  {word:'이',  meaning:'2（イ）',    roma:'i'},
+  {word:'삼',  meaning:'3（サム）',  roma:'sam'},
+  {word:'사',  meaning:'4（サ）',    roma:'sa'},
+  {word:'오',  meaning:'5（オ）',    roma:'o'},
+  {word:'육',  meaning:'6（ユク）',  roma:'yuk'},
+  {word:'칠',  meaning:'7（チル）',  roma:'chil'},
+  {word:'팔',  meaning:'8（パル）',  roma:'pal'},
+  {word:'구',  meaning:'9（ク）',    roma:'gu'},
+  {word:'십',  meaning:'10（シプ）', roma:'sip'},
+];
+const CHAIN_GOYU = [
+  {word:'하나',   meaning:'ひとつ', roma:'hana'},
+  {word:'둘',     meaning:'ふたつ', roma:'dul'},
+  {word:'셋',     meaning:'みっつ', roma:'set'},
+  {word:'넷',     meaning:'よっつ', roma:'net'},
+  {word:'다섯',   meaning:'いつつ', roma:'daseot'},
+  {word:'여섯',   meaning:'むっつ', roma:'yeoseot'},
+  {word:'일곱',   meaning:'ななつ', roma:'ilgop'},
+  {word:'여덟',   meaning:'やっつ', roma:'yeodeol'},
+  {word:'아홉',   meaning:'ここのつ', roma:'ahop'},
+  {word:'열',     meaning:'とお',   roma:'yeol'},
+];
+const CHAINS = {
+  normal:CHAIN_NORMAL, kpop:CHAIN_KPOP, daily:CHAIN_DAILY, review:CHAIN_NORMAL,
+  hanja:CHAIN_HANJA, goyu:CHAIN_GOYU,
+};
 const SPAWN_LEVELS = [1,1,1,2,2,2,3,3,4];
 
 function dailySeed(){const d=new Date();return (d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate())>>>0;}
@@ -117,7 +144,8 @@ class World {
           // Merge check uses the loosened mergeRange (fires before tight contact)
           if(it===this.solverIter-1 && a.level===b.level
              && !a.markedForRemoval && !b.markedForRemoval
-             && a.scale>0.7 && b.scale>0.7){
+             && a.scale>0.7 && b.scale>0.7
+             && !(a.data && a.data.failed) && !(b.data && b.data.failed)){
             this.emit('merge',a,b,nx,ny);
             if(a.markedForRemoval) break;
             continue;
@@ -165,6 +193,7 @@ const Storage = (()=>{
     highScore:0, highScoreByMode:{normal:0,kpop:0,daily:0,review:0},
     learnedWords:{}, mistakeWords:{}, playCount:0,
     maxLevelReached:1, muted:false,
+    customLists:[], activeCustomId:null,
   }}
   let cache;
   try{const raw=localStorage.getItem(KEY); cache=raw?Object.assign(defaults(),JSON.parse(raw)):defaults();}
@@ -178,6 +207,21 @@ const Storage = (()=>{
     incrementPlay(){cache.playCount++;save()},
     setMaxLevel(l){if(l>cache.maxLevelReached){cache.maxLevelReached=l;save()}},
     toggleMute(){cache.muted=!cache.muted;save();return cache.muted},
+    /* === Custom word lists === */
+    listCustom(){return cache.customLists.slice()},
+    getCustom(id){return cache.customLists.find(l=>l.id===id)||null},
+    saveCustom(list){
+      const i=cache.customLists.findIndex(l=>l.id===list.id);
+      if(i>=0) cache.customLists[i]=list; else cache.customLists.push(list);
+      save();
+    },
+    deleteCustom(id){
+      cache.customLists=cache.customLists.filter(l=>l.id!==id);
+      if(cache.activeCustomId===id) cache.activeCustomId=null;
+      save();
+    },
+    setActiveCustom(id){cache.activeCustomId=id;save()},
+    getActiveCustom(){return cache.customLists.find(l=>l.id===cache.activeCustomId)||null},
   };
 })();
 
@@ -269,7 +313,114 @@ const UI = (()=>{
       </div>`;
     }).join('');
   }
-  return { setScore, setBest, setCombo, pop, showHover, hideHover, shake, setNextWord, setMute, renderTree, renderChainList, open, close, showOver, renderGlossary };
+  /* ===== Custom list UI ===== */
+  function renderCustomList(onPick, onEdit){
+    const root=$('custom-list'); if(!root) return;
+    const lists=Storage.listCustom();
+    if(lists.length===0){
+      root.innerHTML=`<div class="cl-row empty">まだリストがありません。「＋ 新しいリスト」から作成</div>`;
+      return;
+    }
+    root.innerHTML='';
+    lists.forEach(l=>{
+      const row=document.createElement('div');
+      row.className='cl-row';
+      row.innerHTML=`<b>${escapeHtml(l.name||'(無題)')}</b><em>${l.words.length}語</em><button class="cl-edit">編集</button>`;
+      row.addEventListener('click',e=>{
+        if(e.target.classList.contains('cl-edit')){ e.stopPropagation(); onEdit(l.id); }
+        else { onPick(l.id); }
+      });
+      root.appendChild(row);
+    });
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])}
+
+  function openCustomEdit(list, onSave, onDelete){
+    $('ce-title').textContent = list.id ? 'リスト編集' : '新しいリスト';
+    $('ce-name').value = list.name || '';
+    const wrap=$('ce-words'); wrap.innerHTML='';
+    const words = list.words.slice();
+    if(words.length===0) words.push({word:'',meaning:''});
+    words.forEach((w,i)=>wrap.appendChild(buildWordRow(w,i)));
+    refreshLv();
+
+    const addBtn=$('ce-add');
+    const onAdd=()=>{
+      if(wrap.children.length>=10) return;
+      wrap.appendChild(buildWordRow({word:'',meaning:''},wrap.children.length));
+      refreshLv();
+    };
+    const onSaveClick=()=>{
+      const name=$('ce-name').value.trim()||'(無題)';
+      const collected=[];
+      [...wrap.children].forEach(row=>{
+        const w=row.querySelector('input.word').value.trim();
+        const m=row.querySelector('input.meaning').value.trim();
+        if(w && m) collected.push({word:w, meaning:m, roma:''});
+      });
+      if(collected.length<3){ alert('単語は最低3語入力してください'); return; }
+      onSave({...list, name, words:collected});
+    };
+    const onCancel=()=>close('m-custom-edit');
+    const onDeleteClick=()=>{
+      if(!list.id) { close('m-custom-edit'); return; }
+      if(confirm('このリストを削除しますか？')) { onDelete(list.id); }
+    };
+    addBtn.onclick=onAdd;
+    $('ce-save').onclick=onSaveClick;
+    $('ce-cancel').onclick=onCancel;
+    $('ce-delete').onclick=onDeleteClick;
+    $('ce-delete').style.display = list.id ? '' : 'none';
+    open('m-custom-edit');
+
+    function buildWordRow(w,i){
+      const row=document.createElement('div');
+      row.className='ce-word-row';
+      row.innerHTML=`
+        <span class="ce-lv">Lv.${i+1}</span>
+        <input class="word" type="text" placeholder="韓国語" value="${escapeHtml(w.word||'')}" maxlength="20">
+        <input class="meaning" type="text" placeholder="意味" value="${escapeHtml(w.meaning||'')}" maxlength="20">
+        <button class="ce-rm" type="button" aria-label="削除">×</button>`;
+      row.querySelector('.ce-rm').onclick=()=>{
+        if(wrap.children.length<=1) return;
+        row.remove(); refreshLv();
+      };
+      return row;
+    }
+    function refreshLv(){
+      [...wrap.children].forEach((r,i)=>{ r.querySelector('.ce-lv').textContent='Lv.'+(i+1); });
+      addBtn.style.display = wrap.children.length>=10 ? 'none' : '';
+    }
+  }
+
+  /* ===== Quiz overlay ===== */
+  function showQuiz(question, choices, onAnswer){
+    const root=$('quiz');
+    $('quiz-word').textContent=question.word;
+    const opts=$('quiz-opts'); opts.innerHTML='';
+    choices.forEach((c,i)=>{
+      const b=document.createElement('button');
+      b.type='button'; b.className='quiz-opt'; b.textContent=c.meaning;
+      b.addEventListener('click',()=>{
+        if(opts.dataset.locked) return;
+        opts.dataset.locked='1';
+        const correct = c.word===question.word;
+        b.classList.add(correct?'correct':'wrong');
+        [...opts.children].forEach(x=>{ if(x!==b) x.classList.add('dim'); });
+        setTimeout(()=>{
+          root.classList.remove('show');
+          opts.innerHTML=''; delete opts.dataset.locked;
+          onAnswer(correct);
+        }, correct?280:520);
+      },{passive:true});
+      opts.appendChild(b);
+    });
+    root.classList.add('show');
+  }
+  function hideQuiz(){ const r=$('quiz'); r.classList.remove('show'); $('quiz-opts').innerHTML=''; }
+  function isQuizOpen(){ return $('quiz').classList.contains('show'); }
+
+  return { setScore, setBest, setCombo, pop, showHover, hideHover, shake, setNextWord, setMute, renderTree, renderChainList, open, close, showOver, renderGlossary, renderCustomList, openCustomEdit, showQuiz, hideQuiz, isQuizOpen };
 })();
 
 /* ========== Game ========== */
@@ -293,12 +444,13 @@ const Game = (()=>{
   let gameOver=false, hoverBody=null, bgPulse=0, gameOverTo=0;
 
   function pickSpawn(){
+    const cap=Math.max(1, Math.min(4, chain.length-1));
     if(mode==='review'){
       const m=Storage.get().mistakeWords, ls=[];
-      chain.forEach((it,i)=>{ if(m[it.word] && i+1<=5) ls.push(i+1) });
+      chain.forEach((it,i)=>{ if(m[it.word] && i+1<=cap) ls.push(i+1) });
       if(ls.length && rng()<0.55) return ls[Math.floor(rng()*ls.length)];
     }
-    return SPAWN_LEVELS[Math.floor(rng()*SPAWN_LEVELS.length)];
+    return Math.min(cap, SPAWN_LEVELS[Math.floor(rng()*SPAWN_LEVELS.length)]);
   }
 
   /* ===== Audio ===== */
@@ -381,14 +533,42 @@ const Game = (()=>{
     if(gameOverTo) clearTimeout(gameOverTo);
     gameOverTo=setTimeout(()=>{gameOverTo=0; if(gameOver){const d=Storage.get(); UI.showOver(score,d.highScore,maxLevelThisRun,learnedThisRun.size)}}, 700);
   }
+  function shuffleArr(a){
+    const r=a.slice();
+    for(let i=r.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[r[i],r[j]]=[r[j],r[i]];}
+    return r;
+  }
+  function buildQuiz(question){
+    const seen=new Set([question.meaning]);
+    const pool=chain.filter(w=>{
+      if(w.word===question.word) return false;
+      if(seen.has(w.meaning)) return false;
+      seen.add(w.meaning); return true;
+    });
+    const distractors=shuffleArr(pool).slice(0,2);
+    while(distractors.length<2){
+      distractors.push({word:'', meaning:'？？？'});
+    }
+    return shuffleArr([question, ...distractors]);
+  }
   function tryDrop(){
     if(gameOver) return;
+    if(UI.isQuizOpen()) return;
     const now=performance.now();
     if(now-lastDropAt<dropCooldown) return;
     lastDropAt=now;
-    const lv=nextLevel, data=chain[lv-1], r=RADII[lv-1];
-    const x=Math.max(r,Math.min(WIDTH-r,dropX));
-    const body=new Body({x,y:SPAWN_Y,radius:r,level:lv,data:{...data,color:PASTEL[lv-1]}});
+    const lv=nextLevel, question=chain[lv-1];
+    const x=dropX;
+    const choices=buildQuiz(question);
+    UI.showQuiz(question, choices, (correct)=>{
+      dropFruit(x, lv, !correct);
+    });
+  }
+  function dropFruit(x, lv, failed){
+    if(gameOver) return;
+    const data=chain[lv-1], r=RADII[lv-1];
+    const cx=Math.max(r,Math.min(WIDTH-r,x));
+    const body=new Body({x:cx,y:SPAWN_Y,radius:r,level:lv,data:{...data,color:PASTEL[lv-1],failed:!!failed}});
     body.scale=0.5; world.add(body);
     sfx('drop'); nextLevel=pickSpawn(); drawNext();
   }
@@ -419,17 +599,23 @@ const Game = (()=>{
     drawBody({x,y:SPAWN_Y,r,level:lv,data:{...chain[lv-1],color:PASTEL[lv-1]},angle:0,scale:1}, 0.85);
   }
   function drawBody(b, alpha=1){
-    const r=b.r*(b.scale??1), color=b.data.color||PASTEL[b.level-1];
-    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.angle||0); ctx.globalAlpha=alpha;
+    const r=b.r*(b.scale??1);
+    const failed=!!(b.data && b.data.failed);
+    const baseColor=b.data.color||PASTEL[b.level-1];
+    const color=failed ? grayscale(baseColor) : baseColor;
+    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.angle||0); ctx.globalAlpha=alpha*(failed?0.85:1);
     ctx.beginPath(); ctx.arc(0,r*0.15,r,0,Math.PI*2); ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.fill();
     const grad=ctx.createRadialGradient(-r*0.35,-r*0.4,r*0.1,0,0,r);
-    grad.addColorStop(0,'#fff'); grad.addColorStop(0.25,lighten(color,0.15)); grad.addColorStop(1,color);
+    grad.addColorStop(0, failed?'#f0f0f0':'#fff'); grad.addColorStop(0.25,lighten(color,0.15)); grad.addColorStop(1,color);
     ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fillStyle=grad; ctx.fill();
-    ctx.strokeStyle=darken(color,0.18); ctx.lineWidth=Math.max(1.5,r*0.05); ctx.stroke();
+    ctx.strokeStyle=failed?'#666':darken(color,0.18); ctx.lineWidth=Math.max(1.5,r*0.05);
+    if(failed){ ctx.setLineDash([4,3]); }
+    ctx.stroke();
+    if(failed){ ctx.setLineDash([]); }
     ctx.beginPath(); ctx.ellipse(-r*0.35,-r*0.4,r*0.35,r*0.18,-0.5,0,Math.PI*2);
     ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.fill();
     const word=b.data.word||'', fs=fitFs(ctx,word,r*1.7,r*0.65);
-    ctx.fillStyle=darken(color,0.55);
+    ctx.fillStyle=failed?'#444':darken(color,0.55);
     ctx.font=`900 ${fs}px "Hiragino Maru Gothic ProN","Yu Gothic UI",system-ui,sans-serif`;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(word,0,0);
@@ -447,6 +633,7 @@ const Game = (()=>{
   function lighten(hex,a){const c=h2r(hex);return`rgb(${Math.min(255,c.r+255*a)|0},${Math.min(255,c.g+255*a)|0},${Math.min(255,c.b+255*a)|0})`}
   function darken(hex,a){const c=h2r(hex);return`rgb(${Math.max(0,c.r-255*a)|0},${Math.max(0,c.g-255*a)|0},${Math.max(0,c.b-255*a)|0})`}
   function h2r(hex){const m=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return m?{r:parseInt(m[1],16),g:parseInt(m[2],16),b:parseInt(m[3],16)}:{r:200,g:200,b:200}}
+  function grayscale(hex){const c=h2r(hex);const g=(c.r*0.3+c.g*0.59+c.b*0.11)|0;const m=Math.min(220,Math.max(140,g));return `rgb(${m},${m},${m})`}
 
   function drawNext(){
     const w=nextC.width, h=nextC.height;
@@ -504,7 +691,7 @@ const Game = (()=>{
   }
   // True if event target is an interactive UI element that should NOT trigger
   // a drop (buttons, modals, mode tabs, info bar buttons).
-  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .modes, .menu, .info'));
+  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .modes, .menu, .info, .quiz'));
 
   // Mouse: keep the canvas-only behavior (cursor doesn't obscure view)
   canvas.addEventListener('mousemove',onMove);
@@ -545,14 +732,39 @@ const Game = (()=>{
 
   /* ===== Mode / restart ===== */
   function setMode(m){
-    mode=m; chain=CHAINS[m]||CHAINS.normal;
+    if(m==='custom'){
+      const list=Storage.getActiveCustom();
+      if(!list || !list.words || list.words.length<3){ openCustomPicker(); return; }
+      mode=m; chain=list.words;
+    } else {
+      mode=m; chain=CHAINS[m]||CHAINS.normal;
+    }
     rng = (m==='daily') ? mulberry32(dailySeed()) : Math.random;
     document.querySelectorAll('.m').forEach(b=>b.classList.toggle('active', b.getAttribute('data-mode')===m));
     restart();
   }
+  function openCustomPicker(){
+    UI.renderCustomList(
+      (id)=>{ Storage.setActiveCustom(id); UI.close('m-custom'); setMode('custom'); },
+      (id)=>{ const l=Storage.getCustom(id); UI.openCustomEdit(l, saveCustomList, deleteCustomList); }
+    );
+    UI.open('m-custom');
+  }
+  function saveCustomList(list){
+    if(!list.id) list.id='cl_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,6);
+    Storage.saveCustom(list);
+    Storage.setActiveCustom(list.id);
+    UI.close('m-custom-edit'); UI.close('m-custom');
+    setMode('custom');
+  }
+  function deleteCustomList(id){
+    Storage.deleteCustom(id);
+    UI.close('m-custom-edit');
+    openCustomPicker();
+  }
   function restart(){
     if(gameOverTo){clearTimeout(gameOverTo); gameOverTo=0}
-    UI.close('m-over'); UI.hideHover();
+    UI.close('m-over'); UI.hideHover(); UI.hideQuiz();
     score=0; combo=0; lastMergeAt=0;
     maxLevelThisRun=1; learnedThisRun=new Set();
     gameOver=false; hoverBody=null; bgPulse=0;
@@ -580,7 +792,15 @@ const Game = (()=>{
 
   /* ===== Boot ===== */
   function init(){
-    document.querySelectorAll('.m').forEach(b=>b.addEventListener('click',()=>setMode(b.getAttribute('data-mode'))));
+    document.querySelectorAll('.m').forEach(b=>b.addEventListener('click',()=>{
+      const mm=b.getAttribute('data-mode');
+      if(mm==='custom') openCustomPicker();
+      else setMode(mm);
+    }));
+    const newBtn=$('b-custom-new');
+    if(newBtn) newBtn.addEventListener('click',()=>{
+      UI.openCustomEdit({id:null, name:'', words:[]}, saveCustomList, deleteCustomList);
+    });
 
     // Hamburger menu toggle + close-on-outside
     const menu = $('menu');
