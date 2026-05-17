@@ -92,7 +92,8 @@ class Body {
     this.vx=o.vx||0; this.vy=o.vy||0;
     this.angle=(Math.random()-0.5)*0.4; this.angularVel=0;
     this.level=o.level||1; this.data=o.data||{};
-    this.mass=Math.PI*this.r*this.r*0.001;
+    // 質量係数を下げて「軽い」感触に（衝突時の反応が機敏、積み上げも安定）
+    this.mass=Math.PI*this.r*this.r*0.0006;
     this.invMass=o.static?0:1/this.mass;
     this.static=!!o.static; this.frozen=!!o.frozen;
     this.bornAt=performance.now();
@@ -103,17 +104,17 @@ class Body {
 class World {
   constructor(o){
     this.w=o.width; this.h=o.height;
-    // 5. 物理パラメータを微調整して「ヌルッ」「カチッ」な感触に
-    this.gravity=o.gravity??0.62;       // やや強め: 落下が機敏
-    this.airDamp=0.9986;                // 空気抵抗そのまま
-    this.angularDamp=0.90;              // 回転は早めに収束（ジッタ低減）
-    this.angularMax=0.16;               // 回転速度上限を控えめに
-    this.restitution=0.12;              // 跳ね返りを抑制（ぐにっとした接触感）
-    this.friction=0.22;                 // 接線摩擦やや強め（横滑り抑制）
-    this.mergeRange=1.06;               // 合体トリガを少し締めて「ピタッ」と合体
+    // === 物理パラメータ（軽め＋高摩擦で「安定して積める」感触） ===
+    this.gravity=o.gravity??0.55;       // 重力やや弱め: 軽く落ちる
+    this.airDamp=0.9985;                // 空気抵抗そのまま
+    this.angularDamp=0.82;              // 回転を強めに減衰（横転を抑制）
+    this.angularMax=0.10;               // 回転速度上限を低く（コロコロ転がらない）
+    this.restitution=0.08;              // 跳ね返りほぼ無し（"カツン"より"スッ"）
+    this.friction=0.55;                 // 摩擦大幅 UP: 横滑り/コロコロを抑制
+    this.mergeRange=1.06;               // 合体トリガ控えめ
     this.ceiling=o.ceiling??80;
     this.bodies=[];
-    this.solverIter=6;                  // 反復回数増 → 重なり/食い込み低減
+    this.solverIter=6;                  // 反復回数: 重なり/食い込み抑制
     this.events={merge:[],ceiling:[]};
     this._ceilingFired=false;
   }
@@ -261,7 +262,9 @@ const UI = (()=>{
   function setScore(s){$('score').textContent=s.toLocaleString()}
   function setBest(s){$('best').textContent=s.toLocaleString()}
   function setCombo(n){
-    const c=$('combo'); $('combo-n').textContent=n;
+    // ×Nラベルは UI 簡素化で撤去。要素が無ければ何もしない（コンボロジック自体は維持）
+    const c=$('combo'); if(!c) return;
+    const cn=$('combo-n'); if(cn) cn.textContent=n;
     if(n>1){c.classList.add('active'); c.style.transform='scale(1.18)'; requestAnimationFrame(()=>c.style.transform='')}
     else c.classList.remove('active');
   }
@@ -877,40 +880,137 @@ const Game = (()=>{
       UI.showHover(r.left+f.x*sx, r.top+(f.y-f.r)*sy, f);
     } else UI.hideHover();
   }
-  // True if event target is an interactive UI element that should NOT trigger
-  // a drop (buttons, modals, mode tabs, info bar buttons).
-  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .modes, .menu, .info, .quiz'));
+  // タップ対象が UI なら通常タッチハンドラに任せる
+  // drop-zone は pointer-events:none なので e.target にはならない（透過）
+  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .menu, .quiz, .start'));
 
   // Mouse: keep the canvas-only behavior (cursor doesn't obscure view)
   canvas.addEventListener('mousemove',onMove);
   canvas.addEventListener('mouseleave',()=>UI.hideHover());
-  canvas.addEventListener('mousedown',e=>{if(gameOver)return;e.preventDefault();onMove(e);tryDrop()});
+  canvas.addEventListener('mousedown',e=>{if(gameOver||!started)return;e.preventDefault();onMove(e);tryDrop()});
 
-  // Touch: capture anywhere on the document so the player can drag/aim with
-  // a finger BELOW or BESIDE the canvas — keeping the play area unobscured.
-  let touchStart=null;
+  /* === ボトムドロップゾーン + ドラッグ・トゥ・アンサー ===========
+   * 1) 指を画面下端 (drop-zone) に到達させると tryDrop で出題
+   * 2) 出題後はそのままドラッグで選択肢ハイライト
+   * 3) 指を離した位置の選択肢が自動で選ばれる（onAnswer 実行）
+   * 4) 指を離した位置が選択肢上でなければ通常タップ動作に委ねる
+   * ============================================================ */
+  let touchStart = null;
+  let quizArmedByDrag = false;
+  let lastChoiceEl = null;
+  const dropZoneEl = document.getElementById('drop-zone');
+
+  function inBottomZone(clientY){
+    if(dropZoneEl){
+      const r = dropZoneEl.getBoundingClientRect();
+      return clientY >= r.top;
+    }
+    return clientY > window.innerHeight - 100;
+  }
+  function highlightChoiceAt(clientX, clientY){
+    if(!UI.isQuizOpen()) return;
+    const el = document.elementFromPoint(clientX, clientY);
+    const opt = el && el.closest ? el.closest('.quiz-opt') : null;
+    if(opt === lastChoiceEl) return;
+    if(lastChoiceEl) lastChoiceEl.classList.remove('finger-over');
+    lastChoiceEl = opt || null;
+    if(lastChoiceEl) lastChoiceEl.classList.add('finger-over');
+  }
+  function clearChoiceHighlight(){
+    if(lastChoiceEl){ lastChoiceEl.classList.remove('finger-over'); lastChoiceEl=null; }
+  }
+  function armDropZone(on){
+    if(!dropZoneEl) return;
+    dropZoneEl.classList.toggle('armed', !!on);
+  }
+
   document.addEventListener('touchstart',e=>{
-    if(gameOver) return;
+    if(gameOver||!started) return;
     if(isUI(e.target)) return;          // let UI handle its own taps
     e.preventDefault();
     UI.hideHover();
+    const t = e.touches[0];
     onMove(e);
-    touchStart={t:performance.now(),inspect:!!hoverBody};
+    touchStart={t:performance.now(),inspect:!!hoverBody, startedInBottom:inBottomZone(t.clientY)};
+    armDropZone(true);
+
+    // 直接ボトムゾーンで開始 → 即出題（指を置いた瞬間にもクイズへ）
+    if(!UI.isQuizOpen() && inBottomZone(t.clientY)){
+      quizArmedByDrag = true;
+      tryDrop();
+      // クイズ DOM が即時に挿入されるので、レイアウト後に指の下を判定
+      requestAnimationFrame(()=>highlightChoiceAt(t.clientX, t.clientY));
+    }
   },{passive:false});
+
   document.addEventListener('touchmove',e=>{
-    if(gameOver||!touchStart) return;
+    if(gameOver||!started||!touchStart) return;
     e.preventDefault();
+    const t = e.touches[0];
+
+    // 出題中: 指の下の選択肢をハイライト（落下位置は出題時点で固定）
+    if(UI.isQuizOpen()){
+      highlightChoiceAt(t.clientX, t.clientY);
+      return;
+    }
+
+    // 出題前: 通常の照準ガイド更新
     onMove(e);
+
+    // 指がボトムゾーンに入った → 出題開始（1モーションで自然に発動）
+    if(inBottomZone(t.clientY)){
+      quizArmedByDrag = true;
+      tryDrop();
+      requestAnimationFrame(()=>highlightChoiceAt(t.clientX, t.clientY));
+    }
   },{passive:false});
+
   document.addEventListener('touchend',e=>{
-    if(gameOver||!touchStart){touchStart=null; return;}
+    if(gameOver||!started||!touchStart){
+      touchStart=null; quizArmedByDrag=false; clearChoiceHighlight(); armDropZone(false); return;
+    }
     e.preventDefault();
+    const ct = (e.changedTouches && e.changedTouches[0]) || null;
+
+    // 出題中: 指の下に選択肢があれば自動選択（既存クリックハンドラを発火）
+    if(UI.isQuizOpen()){
+      let opt = lastChoiceEl;
+      if(!opt && ct){
+        const el = document.elementFromPoint(ct.clientX, ct.clientY);
+        opt = el && el.closest ? el.closest('.quiz-opt') : null;
+      }
+      clearChoiceHighlight();
+      armDropZone(false);
+      if(opt){
+        // 既存ハンドラに委譲 → 正解判定 + 果物落下 + タイマー解除まで一括
+        opt.click();
+      }
+      // 選択肢上で離していなければクイズは開いたまま（タップで通常選択可能）
+      quizArmedByDrag = false;
+      touchStart = null;
+      return;
+    }
+
+    // 出題前 → 既存仕様: 単語ホバー or tryDrop
     const dt=performance.now()-touchStart.t;
-    if(touchStart.inspect && dt<500){setTimeout(()=>UI.hideHover(),1600);}
-    else{tryDrop(); UI.hideHover();}
+    if(touchStart.inspect && dt<500){
+      setTimeout(()=>UI.hideHover(),1600);
+    } else if(!quizArmedByDrag){
+      tryDrop();
+      UI.hideHover();
+    } else {
+      UI.hideHover();
+    }
+    quizArmedByDrag=false;
     touchStart=null;
+    armDropZone(false);
   },{passive:false});
-  document.addEventListener('touchcancel',()=>{touchStart=null; UI.hideHover();});
+
+  document.addEventListener('touchcancel',()=>{
+    touchStart=null; quizArmedByDrag=false;
+    clearChoiceHighlight(); armDropZone(false);
+    UI.hideHover();
+  });
   document.addEventListener('keydown',e=>{
     if(gameOver) return;
     if(e.key==='ArrowLeft')  dropX=Math.max(0,dropX-16);
@@ -1019,7 +1119,9 @@ const Game = (()=>{
     $('b-help').addEventListener('click',()=>{closeMenu(); UI.open('m-help')});
     $('b-glossary').addEventListener('click',()=>{closeMenu(); UI.renderGlossary(); UI.open('m-glossary')});
 
-    $('tree').addEventListener('click',()=>{UI.renderChainList(chain,Storage.get().maxLevelReached);UI.open('m-tree')});
+    // 進化リスト表示は UI から削除済み。要素がある場合だけクリックを有効化（互換用）
+    const treeEl = $('tree');
+    if(treeEl) treeEl.addEventListener('click',()=>{UI.renderChainList(chain,Storage.get().maxLevelReached);UI.open('m-tree')});
     $('r-again').addEventListener('click',()=>{UI.close('m-over');restart()});
     $('r-glossary').addEventListener('click',()=>{UI.close('m-over');UI.renderGlossary();UI.open('m-glossary')});
 

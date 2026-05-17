@@ -13,42 +13,44 @@
   <header class="head">
     <button class="b-menu" id="b-menu" aria-label="メニュー">☰</button>
     <div class="title"><span class="logo">🍉</span><h1>한글수박</h1></div>
+    <!-- NEXT プレビュー: スコアの左隣に配置 -->
+    <div class="next-mini" id="next-mini" aria-label="次の単語">
+      <canvas id="next-canvas" width="50" height="50"></canvas>
+    </div>
     <div class="scores">
       <div class="sc"><span>SCORE</span><b id="score">0</b></div>
       <div class="sc small"><span>BEST</span><b id="best">0</b></div>
     </div>
   </header>
 
+  <!-- ハンバーガーメニュー: カテゴリも全部ここに集約 -->
   <nav class="menu" id="menu" aria-hidden="true">
-    <button id="b-reset">🔄 リセット</button>
-    <button id="b-mute">🔊 音声</button>
-    <button id="b-help">❓ 遊び方</button>
-    <button id="b-glossary">📖 学んだ単語</button>
-  </nav>
-
-  <nav class="modes">
-    <button class="m active" data-mode="normal">ノーマル</button>
-    <button class="m" data-mode="kpop">K-POP</button>
-    <button class="m" data-mode="daily">デイリー</button>
-    <button class="m" data-mode="review">復習</button>
-    <button class="m" data-mode="hanja">漢数詞</button>
-    <button class="m" data-mode="goyu">固有数詞</button>
-    <button class="m" data-mode="custom">📝 自作</button>
-  </nav>
-
-  <section class="info">
-    <div class="next">
-      <span>NEXT</span>
-      <canvas id="next-canvas" width="50" height="50"></canvas>
-      <b id="next-word"></b>
+    <div class="menu-sec">
+      <div class="menu-sec-t">カテゴリ</div>
+      <button class="m" data-mode="normal">ノーマル</button>
+      <button class="m" data-mode="kpop">K-POP</button>
+      <button class="m" data-mode="daily">デイリー</button>
+      <button class="m" data-mode="review">復習</button>
+      <button class="m" data-mode="hanja">漢数詞</button>
+      <button class="m" data-mode="goyu">固有数詞</button>
+      <button class="m" data-mode="custom">📝 自作</button>
     </div>
-    <div class="combo" id="combo">×<span id="combo-n">1</span></div>
-    <div class="tree" id="tree" title="合体ツリー"></div>
-  </section>
+    <div class="menu-sec">
+      <button id="b-reset">🔄 リセット</button>
+      <button id="b-mute">🔊 音声</button>
+      <button id="b-help">❓ 遊び方</button>
+      <button id="b-glossary">📖 学んだ単語</button>
+    </div>
+  </nav>
 
   <main class="board" id="board">
     <canvas id="game" width="420" height="640"></canvas>
   </main>
+
+  <!-- ボトムタッチゾーン: 指を下端に置くと出題が開く操作領域 -->
+  <div class="drop-zone" id="drop-zone" aria-hidden="true">
+    <span>▼ ここまで指をドラッグして出題 ▼</span>
+  </div>
 
 </div>
 
@@ -73,9 +75,10 @@
 <div class="modal" id="m-help"><div class="card">
   <div class="emoji">📖</div><h2>遊び方</h2>
   <ul class="hl">
-    <li><b>タップ／クリック</b>で単語を落とす</li>
+    <li><b>画面下端</b>へ指をドラッグ→出題、そのまま<b>選択肢に指を移動して離す</b>と回答＆落下</li>
+    <li>PC は<b>クリック</b>で出題 → クリックで回答</li>
     <li>同じ単語が触れると<b>合体</b>して進化</li>
-    <li>連続合体で<b>コンボ</b>スコア倍増</li>
+    <li>連続合体で<b>スコア倍増</b></li>
     <li>赤い線を超えるとゲームオーバー</li>
     <li>合体後の単語にタップ／ホバーで意味と発音表示</li>
   </ul>

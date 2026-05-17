@@ -28,7 +28,7 @@ body{
   -webkit-user-select:none;
 }
 
-/* ===== App: full visible viewport (toolbar removed → canvas gets more room) ===== */
+/* ===== App: 上部の余白を最小化、ゲーム面を上方向にタイトに ===== */
 .app{
   position:fixed;
   top:0;
@@ -37,19 +37,20 @@ body{
   bottom:0;
   display:flex;
   flex-direction:column;
-  gap:6px;
-  padding:8px 8px max(8px,env(safe-area-inset-bottom)) 8px;
+  gap:2px;                                /* ヘッダーと盤面の隙間を最小化 */
+  padding:6px 8px max(8px,env(safe-area-inset-bottom)) 8px;
   overflow:hidden;
 }
 
-.head,.modes,.info{flex:0 0 auto}
+.head{flex:0 0 auto}
 .board{
   flex:1 1 auto;
   min-height:0;
   display:flex;
-  align-items:center;
+  align-items:flex-start;                 /* 盤面を少し上に寄せる */
   justify-content:center;
   position:relative;
+  padding-top:2px;
 }
 
 /* ===== Header ===== */
@@ -68,30 +69,64 @@ body{
   left:max(8px,env(safe-area-inset-left,0px));
   display:none;
   flex-direction:column;
-  gap:2px;
+  gap:6px;
   background:#fff;
   border:2px solid #ffc8db;
   border-bottom-width:3px;
   border-radius:12px;
-  padding:6px;
+  padding:8px;
   box-shadow:0 8px 24px rgba(0,0,0,.18);
   z-index:80;
-  min-width:160px;
+  min-width:180px;
+  max-height:80svh;
+  overflow-y:auto;
   animation:menuIn .15s ease-out;
 }
 .menu.show{display:flex}
 @keyframes menuIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.menu button{
+
+/* メニュー内のセクション */
+.menu-sec{display:flex;flex-direction:column;gap:2px}
+.menu-sec + .menu-sec{margin-top:4px;padding-top:6px;border-top:1.5px dashed #ffd2e1}
+.menu-sec-t{
+  font-size:9px;font-weight:900;color:#c43e6e;letter-spacing:2px;
+  padding:2px 8px 4px;text-transform:uppercase;
+}
+
+/* 既定のメニュー項目（カテゴリ以外） */
+.menu > .menu-sec > button:not(.m){
   background:transparent;border:none;text-align:left;
   padding:8px 12px;font-size:13px;font-weight:900;color:#a04f74;
   cursor:pointer;white-space:nowrap;border-radius:8px;
 }
-.menu button:hover{background:#fff7fa}
-.menu button:active{background:#ffe2ee;transform:translateY(1px)}
+.menu > .menu-sec > button:not(.m):hover{background:#fff7fa}
+.menu > .menu-sec > button:not(.m):active{background:#ffe2ee;transform:translateY(1px)}
 
-.title{display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 auto}
-.logo{font-size:24px;flex-shrink:0}
-.title h1{font-size:16px;color:#c43e6e;font-weight:900;white-space:nowrap;text-shadow:0 1px 0 #fff}
+/* メニュー内に移動したモード切替ボタン */
+.menu .m{
+  background:#fff;border:2px solid #ffc8db;border-bottom-width:3px;color:#a04f74;
+  padding:7px 10px;border-radius:10px;font-weight:900;font-size:12px;
+  cursor:pointer;white-space:nowrap;text-align:left;font-family:inherit;
+}
+.menu .m:active{transform:translateY(1px);border-bottom-width:2px}
+.menu .m.active{
+  background:linear-gradient(180deg,#ff8eb6,#ff6fa1);color:#fff;border-color:#d44d80;
+}
+
+.title{display:flex;align-items:center;gap:4px;min-width:0;flex:1 1 auto}
+.logo{font-size:22px;flex-shrink:0}
+.title h1{font-size:14px;color:#c43e6e;font-weight:900;white-space:nowrap;text-shadow:0 1px 0 #fff;overflow:hidden;text-overflow:ellipsis}
+
+/* NEXT プレビュー: スコアの左、円形ミニキャンバスのみ */
+.next-mini{
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#fff,#fff7fa);
+  border:2px solid #ffaecf;border-radius:10px;
+  padding:2px;box-shadow:0 2px 0 #e190b9;
+  flex-shrink:0;
+}
+#next-canvas{width:30px;height:30px;border-radius:50%;background:#fff7fa;display:block}
+
 .scores{display:flex;gap:4px;flex-shrink:0}
 .sc{
   background:linear-gradient(180deg,#fff,#fff7fa);
@@ -106,51 +141,6 @@ body{
 .sc span{display:block;font-size:8px;font-weight:900;color:#c43e6e;letter-spacing:1px}
 .sc.small span{color:#c47a3e}
 .sc b{display:block;font-size:14px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
-
-/* ===== Mode tabs ===== */
-.modes{display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
-.modes::-webkit-scrollbar{display:none}
-.m{
-  background:#fff;border:2px solid #ffc8db;border-bottom-width:3px;color:#a04f74;
-  padding:4px 9px;border-radius:10px;font-weight:900;font-size:10px;cursor:pointer;
-  white-space:nowrap;flex-shrink:0;
-}
-.m:active{transform:translateY(1px);border-bottom-width:2px}
-.m.active{background:linear-gradient(180deg,#ff8eb6,#ff6fa1);color:#fff;border-color:#d44d80}
-
-/* ===== Info bar ===== */
-.info{
-  display:flex;align-items:center;gap:6px;
-  padding:3px 6px;
-  background:rgba(255,255,255,.55);
-  border:1.5px solid #ffd2e1;border-radius:10px;
-}
-.next{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.next > span{font-size:8px;font-weight:900;color:#c43e6e;letter-spacing:1px}
-#next-canvas{width:26px;height:26px;border-radius:50%;background:#fff7fa}
-.next b{font-size:10px;font-weight:900;color:#c43e6e;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.combo{
-  font-size:10px;font-weight:900;color:#a64b00;
-  background:linear-gradient(180deg,#fff7c8,#ffe28a);
-  border:1.5px solid #ffd460;border-radius:8px;
-  padding:2px 6px;opacity:.45;flex-shrink:0;
-  transition:opacity .25s,transform .15s;
-}
-.combo.active{opacity:1;transform:scale(1.05)}
-.combo span{color:#d9580e}
-.tree{
-  display:flex;align-items:center;gap:3px;
-  flex:1 1 auto;justify-content:flex-end;
-  overflow-x:auto;scrollbar-width:none;cursor:pointer;
-}
-.tree::-webkit-scrollbar{display:none}
-.dot{
-  width:11px;height:11px;border-radius:50%;
-  border:1.5px solid rgba(0,0,0,.08);
-  flex-shrink:0;opacity:.35;filter:grayscale(.6);
-}
-.dot.on{opacity:1;filter:none;box-shadow:0 0 4px rgba(255,255,255,.7)}
-.dot.peak{transform:scale(1.25);box-shadow:0 0 6px rgba(255,170,80,.9),inset 0 0 0 1px #fff}
 
 /* ===== Game board ===== */
 #game{
@@ -346,6 +336,37 @@ body{
 }
 @keyframes qtPulse{from{transform:scale(1)}to{transform:scale(1.12)}}
 
+/* ===== ボトムドロップゾーン =====
+ * 指を画面下端に持っていくと出題が開く操作領域。
+ * ピンクの薄バーで「ここまでドラッグ」の手がかりを出す。
+ * クイズ表示中は隠れる（z-index は quiz より下）。
+ * ============================================================ */
+.drop-zone, .drop-zone *{pointer-events:none}
+.drop-zone{
+  position:fixed;left:0;right:0;
+  bottom:max(0px,env(safe-area-inset-bottom,0px));
+  height:64px;
+  display:flex;align-items:center;justify-content:center;
+  /* タッチは document リスナーが拾う（要素自体は当たり判定の外） */
+  z-index:50;
+  background:linear-gradient(0deg,rgba(255,142,182,.20),rgba(255,142,182,0));
+  font-size:11px;font-weight:900;color:#a04f74;
+  letter-spacing:1px;
+  text-shadow:0 1px 0 #fff;
+  transition:opacity .2s, background .2s;
+}
+.drop-zone.armed{
+  background:linear-gradient(0deg,rgba(255,142,182,.45),rgba(255,142,182,.05));
+}
+.drop-zone.hidden{opacity:0}
+/* ホバー枠 */
+.quiz-opt.finger-over{
+  background:linear-gradient(180deg,#fff7c8,#ffe28a);
+  border-color:#ffb43d;color:#a64b00;
+  transform:translateY(-2px) scale(1.02);
+  box-shadow:0 0 0 3px rgba(255,180,61,.35);
+}
+
 /* ===== Quiz overlay (3-choice on drop) ===== */
 .quiz{
   position:fixed;inset:0;display:none;
@@ -441,37 +462,34 @@ body{
  * =========================================================== */
 
 @media (min-width:480px){
-  .app{padding:10px 10px max(10px,env(safe-area-inset-bottom)) 10px;gap:8px}
-  .title h1{font-size:20px}
-  .logo{font-size:30px}
+  .app{padding:8px 10px max(10px,env(safe-area-inset-bottom)) 10px;gap:3px}
+  .title h1{font-size:18px}
+  .logo{font-size:26px}
   .sc{padding:4px 12px;min-width:78px}
   .sc span{font-size:9px}
   .sc b{font-size:18px}
-  .m{padding:6px 12px;font-size:11px;border-radius:12px}
-  .info{padding:5px 10px;gap:8px}
-  #next-canvas{width:34px;height:34px}
-  .next > span{font-size:9px}
-  .next b{font-size:12px;max-width:90px}
-  .combo{font-size:12px;padding:4px 8px;border-radius:10px}
-  .dot{width:13px;height:13px}
+  #next-canvas{width:36px;height:36px}
   .b-menu{width:38px;height:38px;font-size:20px;border-radius:10px}
-  .menu button{padding:9px 14px;font-size:14px}
+  .menu > .menu-sec > button:not(.m){padding:9px 14px;font-size:14px}
+  .menu .m{padding:8px 12px;font-size:13px}
+  .drop-zone{height:72px;font-size:12px}
 }
 
 @media (min-width:768px){
-  .app{padding:14px 14px max(14px,env(safe-area-inset-bottom)) 14px;gap:10px;max-width:680px;left:50%;right:auto;transform:translateX(-50%);width:100%}
-  .title h1{font-size:24px}
-  .logo{font-size:38px}
+  .app{padding:10px 14px max(14px,env(safe-area-inset-bottom)) 14px;gap:4px;max-width:680px;left:50%;right:auto;transform:translateX(-50%);width:100%}
+  .title h1{font-size:22px}
+  .logo{font-size:34px}
   .sc{padding:6px 14px;min-width:96px}
   .sc span{font-size:10px}
   .sc b{font-size:22px}
-  .m{padding:7px 14px;font-size:12px}
-  .info{padding:6px 12px;gap:10px}
-  #next-canvas{width:42px;height:42px}
-  .next > span{font-size:10px;letter-spacing:1.5px}
-  .next b{font-size:13px;max-width:120px}
-  .combo{font-size:13px;padding:5px 10px}
-  .dot{width:15px;height:15px}
+  #next-canvas{width:44px;height:44px}
   .b-menu{width:42px;height:42px;font-size:22px;border-radius:11px}
-  .menu button{padding:10px 16px;font-size:15px}
+  .menu > .menu-sec > button:not(.m){padding:10px 16px;font-size:15px}
+  .menu .m{padding:9px 14px;font-size:14px}
+  .drop-zone{height:84px;font-size:13px}
+}
+
+/* 極狭幅では title を畳んで NEXT/SCORE/BEST を確保 */
+@media (max-width:380px){
+  .title h1{display:none}
 }
