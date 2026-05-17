@@ -901,13 +901,12 @@ const Game = (()=>{
   const dropZoneEl = document.getElementById('drop-zone');
 
   function inBottomZone(clientY){
-    // 視覚ストリップは極細だが、判定範囲は上方向に +14px だけ広げて
-    // 「指でちゃんと届くが誤タッチでは入らない」帯にする
+    // 画面最下端の極細トリガ（約5px）。意図的に指を引き下ろした時だけ反応。
     if(dropZoneEl){
       const r = dropZoneEl.getBoundingClientRect();
-      return clientY >= r.top - 14;
+      return clientY >= r.top;
     }
-    return clientY >= window.innerHeight - 28;
+    return clientY >= window.innerHeight - 5;
   }
   function highlightChoiceAt(clientX, clientY){
     if(!UI.isQuizOpen()) return;

@@ -47,10 +47,8 @@
     <canvas id="game" width="420" height="640"></canvas>
   </main>
 
-  <!-- ボトムタッチゾーン: 画面下端の極細ストリップ。指を下に引いて出題 -->
-  <div class="drop-zone" id="drop-zone" aria-hidden="true" title="下に指をドラッグして出題">
-    <span>下にドラッグして出題</span>
-  </div>
+  <!-- 画面最下端 5px の不可視エッジトリガ。指を下端まで引き下ろすと出題 -->
+  <div class="drop-zone" id="drop-zone" aria-hidden="true"></div>
 
 </div>
 
