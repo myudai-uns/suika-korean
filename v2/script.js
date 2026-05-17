@@ -901,11 +901,13 @@ const Game = (()=>{
   const dropZoneEl = document.getElementById('drop-zone');
 
   function inBottomZone(clientY){
+    // 視覚ストリップは極細だが、判定範囲は上方向に +14px だけ広げて
+    // 「指でちゃんと届くが誤タッチでは入らない」帯にする
     if(dropZoneEl){
       const r = dropZoneEl.getBoundingClientRect();
-      return clientY >= r.top;
+      return clientY >= r.top - 14;
     }
-    return clientY > window.innerHeight - 100;
+    return clientY >= window.innerHeight - 28;
   }
   function highlightChoiceAt(clientX, clientY){
     if(!UI.isQuizOpen()) return;
@@ -931,16 +933,14 @@ const Game = (()=>{
     UI.hideHover();
     const t = e.touches[0];
     onMove(e);
-    touchStart={t:performance.now(),inspect:!!hoverBody, startedInBottom:inBottomZone(t.clientY)};
+    // ボトムゾーンの自動出題は「ゾーン外で開始 → 引き下ろし」の意図的動作のみ
+    // 開始時点でゾーン内なら誤タッチ扱いし、自動発動はしない（タップでの通常出題は touchend 側で）
+    touchStart={
+      t:performance.now(),
+      inspect:!!hoverBody,
+      startedAbove: !inBottomZone(t.clientY),
+    };
     armDropZone(true);
-
-    // 直接ボトムゾーンで開始 → 即出題（指を置いた瞬間にもクイズへ）
-    if(!UI.isQuizOpen() && inBottomZone(t.clientY)){
-      quizArmedByDrag = true;
-      tryDrop();
-      // クイズ DOM が即時に挿入されるので、レイアウト後に指の下を判定
-      requestAnimationFrame(()=>highlightChoiceAt(t.clientX, t.clientY));
-    }
   },{passive:false});
 
   document.addEventListener('touchmove',e=>{
@@ -957,8 +957,8 @@ const Game = (()=>{
     // 出題前: 通常の照準ガイド更新
     onMove(e);
 
-    // 指がボトムゾーンに入った → 出題開始（1モーションで自然に発動）
-    if(inBottomZone(t.clientY)){
+    // 「ゾーン外スタート → 引き下ろしでゾーン突入」のみ自動出題
+    if(touchStart.startedAbove && inBottomZone(t.clientY)){
       quizArmedByDrag = true;
       tryDrop();
       requestAnimationFrame(()=>highlightChoiceAt(t.clientX, t.clientY));
