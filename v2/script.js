@@ -110,7 +110,7 @@ class World {
     this.angularDamp=0.988;             // 回転の減衰を弱め、転がりが持続するように
     this.angularMax=Infinity;           // 物理回転は無制限（視覚は drawBody 側で上向き固定）
     this.restitution=0.16;              // 接触時に押し戻し → 反応の良さ
-    this.friction=0.22;                 // 摩擦を緩めて滑り＆転がりを誘発（"ぺたっ"と止まらない）
+    this.friction=0.06;                 // 摩擦を大幅に低くしてツルッと滑る感触に
     this.mergeRange=1.06;               // 合体トリガ控えめ
     this.ceiling=o.ceiling??80;
     this.bodies=[];
