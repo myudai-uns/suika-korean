@@ -92,8 +92,8 @@ class Body {
     this.vx=o.vx||0; this.vy=o.vy||0;
     this.angle=(Math.random()-0.5)*0.4; this.angularVel=0;
     this.level=o.level||1; this.data=o.data||{};
-    // 質量係数を下げて「軽い」感触に（衝突時の反応が機敏、積み上げも安定）
-    this.mass=Math.PI*this.r*this.r*0.0006;
+    // さらに軽量化 → 押されたら素直に動く＆転がる
+    this.mass=Math.PI*this.r*this.r*0.00045;
     this.invMass=o.static?0:1/this.mass;
     this.static=!!o.static; this.frozen=!!o.frozen;
     this.bornAt=performance.now();
@@ -106,11 +106,11 @@ class World {
     this.w=o.width; this.h=o.height;
     // === 物理パラメータ（軽め＋高摩擦で「安定して積める」感触） ===
     this.gravity=o.gravity??0.55;       // 重力やや弱め: 軽く落ちる
-    this.airDamp=0.9985;                // 空気抵抗そのまま
-    this.angularDamp=0.96;              // 緩やかに減衰（自然な惰性回転）
+    this.airDamp=0.9988;                // 空気抵抗わずかに緩く（軽い体感）
+    this.angularDamp=0.988;             // 回転の減衰を弱め、転がりが持続するように
     this.angularMax=Infinity;           // 物理回転は無制限（視覚は drawBody 側で上向き固定）
-    this.restitution=0.08;              // 跳ね返りほぼ無し
-    this.friction=0.55;                 // 摩擦大: 横滑り抑制（スピンは collision 接線で発生）
+    this.restitution=0.16;              // 接触時に押し戻し → 反応の良さ
+    this.friction=0.22;                 // 摩擦を緩めて滑り＆転がりを誘発（"ぺたっ"と止まらない）
     this.mergeRange=1.06;               // 合体トリガ控えめ
     this.ceiling=o.ceiling??80;
     this.bodies=[];
@@ -190,8 +190,11 @@ class World {
           const jt=-vt*this.friction/ti;
           a.vx-=jt*tx*a.invMass; a.vy-=jt*ty*a.invMass;
           b.vx+=jt*tx*b.invMass; b.vy+=jt*ty*b.invMass;
-          const spin=Math.max(-0.04,Math.min(0.04,vt*0.0008));
-          a.angularVel-=spin; b.angularVel+=spin;
+          // 衝突時の接線速度を回転に大幅変換 → 押された側がコロコロ転がる
+          // 大きい果物ほど回りにくいので 1/r でスケール、上限はクランプして暴走防止
+          const avgR = (a.r + b.r) * 0.5;
+          const spin = Math.max(-0.45, Math.min(0.45, vt * 0.18 / Math.max(8, avgR)));
+          a.angularVel -= spin; b.angularVel += spin;
         }
       }
     }
