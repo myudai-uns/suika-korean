@@ -143,7 +143,29 @@
       <span class="quiz-label">この単語の意味は？</span>
       <b id="quiz-word"></b>
     </div>
+    <!-- 3. 10秒カウントダウン（JS で中身を更新） -->
+    <div class="quiz-timer"></div>
     <div class="quiz-opts" id="quiz-opts"></div>
+  </div>
+</div>
+
+<!-- 2. スタート画面（カテゴリ選択） — JSロード前のフラッシュ防止に show を付与 -->
+<div class="start show" id="start" aria-hidden="false">
+  <div class="start-card">
+    <div class="start-logo">🍉</div>
+    <h2 class="start-title">한글수박</h2>
+    <p class="start-sub">学ぶ単語カテゴリを選んで START</p>
+    <div class="start-modes" id="start-modes">
+      <button class="sm" data-mode="normal"><b>ノーマル</b><em>頻出単語</em></button>
+      <button class="sm" data-mode="kpop"><b>K-POP</b><em>推し活フレーズ</em></button>
+      <button class="sm" data-mode="daily"><b>デイリー</b><em>毎日の言葉</em></button>
+      <button class="sm" data-mode="review"><b>復習</b><em>苦手単語多め</em></button>
+      <button class="sm" data-mode="hanja"><b>漢数詞</b><em>일/이/삼…</em></button>
+      <button class="sm" data-mode="goyu"><b>固有数詞</b><em>하나/둘/셋…</em></button>
+      <button class="sm" data-mode="custom"><b>📝 自作</b><em>マイ単語帳</em></button>
+    </div>
+    <button class="bp start-go" id="b-start" disabled>カテゴリを選んでね</button>
+    <p class="start-tip">💡 落下前に出る3択クイズに10秒以内で答えよう</p>
   </div>
 </div>
 

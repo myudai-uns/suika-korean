@@ -22,7 +22,8 @@ html,body{
 body{
   font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI",-apple-system,system-ui,sans-serif;
   color:#3a2a3a;
-  background:linear-gradient(180deg,#ffe9d6 0%,#ffd2c4 35%,#ffc1de 70%,#d6c5ff 100%);
+  /* 5. 背景グラデも気持ちビビッドに（学習ゲームらしいやわらかさは残す） */
+  background:linear-gradient(180deg,#ffe1c4 0%,#ffc1b4 35%,#ffaad2 70%,#c8b8ff 100%);
   user-select:none;
   -webkit-user-select:none;
 }
@@ -257,6 +258,93 @@ body{
 .gi b{font-size:12px;font-weight:900;color:#c43e6e;display:block}
 .gi i{color:#7a5b6e;font-weight:700;display:block;margin-top:2px;font-style:normal}
 .gi em{font-size:8px;color:#aaa;font-weight:900;display:block;margin-top:2px;letter-spacing:1px;font-style:normal}
+
+/* ===== 2. Start screen (mode selection) =====================
+ * 初回ロードで表示。モード選択 + START でゲーム開始。
+ * モーダルより上、ゲーム面より上、ポップアップより上。
+ * ============================================================ */
+.start{
+  position:fixed;inset:0;display:none;
+  align-items:center;justify-content:center;
+  /* モーダル(.modal: 100) より下にして、自作リスト等のサブモーダルが上に重なるように */
+  z-index:95;
+  background:linear-gradient(180deg,rgba(255,234,221,.92),rgba(214,197,255,.92));
+  backdrop-filter:blur(6px);
+  padding:14px;
+}
+.start.show{display:flex;animation:fadeIn .25s}
+.start-card{
+  background:linear-gradient(180deg,#fff,#fff7fa);
+  border:3px solid #ffaecf;border-bottom-width:5px;
+  border-radius:22px;
+  padding:18px 16px 16px;
+  max-width:440px;width:100%;
+  text-align:center;
+  box-shadow:0 16px 40px rgba(196,62,110,.28);
+  animation:popIn .35s cubic-bezier(.2,1.6,.5,1);
+  max-height:calc(100svh - 28px);overflow-y:auto;
+}
+.start-logo{font-size:52px;line-height:1}
+.start-title{
+  font-size:26px;font-weight:900;color:#c43e6e;
+  margin:4px 0 2px;text-shadow:0 2px 0 #fff;
+}
+.start-sub{font-size:12px;font-weight:800;color:#a04f74;margin-bottom:14px}
+.start-modes{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:8px;margin-bottom:12px;
+}
+.start-modes .sm{
+  background:#fff;border:2px solid #ffc8db;border-bottom-width:4px;
+  border-radius:14px;padding:10px 8px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  transition:transform .08s,background .15s,border-color .15s;
+  font-family:inherit;
+}
+.start-modes .sm:active{transform:translateY(2px);border-bottom-width:2px}
+.start-modes .sm b{
+  font-size:14px;font-weight:900;color:#c43e6e;
+}
+.start-modes .sm em{
+  font-size:10px;font-style:normal;font-weight:700;color:#7a5b6e;
+}
+.start-modes .sm.picked{
+  background:linear-gradient(180deg,#fff7c8,#ffe28a);
+  border-color:#ffb43d;
+  box-shadow:0 0 0 2px #ffd97a inset;
+}
+.start-modes .sm.picked b{color:#a64b00}
+.start-go{margin-top:4px;width:100%;font-size:16px;padding:14px}
+.start-go:disabled{
+  background:#f2dfe7;color:#b89eaa;
+  box-shadow:0 3px 0 #d4b9c6;cursor:not-allowed;opacity:.85;
+}
+.start-tip{font-size:11px;color:#7a5b6e;font-weight:700;margin-top:10px}
+
+/* ===== 3. Quiz timer ===== */
+.quiz-timer{
+  display:flex;align-items:center;gap:8px;
+  margin:0 0 10px;
+}
+.qt-bar{
+  flex:1;height:8px;border-radius:6px;
+  background:#ffe2ee;border:1.5px solid #ffc8db;
+  overflow:hidden;
+}
+.qt-fill{
+  height:100%;
+  background:linear-gradient(90deg,#7ee9a0,#ffd93d 60%,#ff6b9d 90%);
+  transition:width .9s linear;
+}
+.qt-num{
+  font-size:12px;font-weight:900;color:#a04f74;
+  min-width:50px;text-align:right;font-variant-numeric:tabular-nums;
+}
+.qt-num.low{
+  color:#d22e5e;
+  animation:qtPulse .5s ease-in-out infinite alternate;
+}
+@keyframes qtPulse{from{transform:scale(1)}to{transform:scale(1.12)}}
 
 /* ===== Quiz overlay (3-choice on drop) ===== */
 .quiz{

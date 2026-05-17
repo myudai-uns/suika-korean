@@ -3,45 +3,51 @@
  * ============================================================ */
 
 /* ========== Word data ========== */
-const PASTEL = ['#FFB3BA','#FFDFBA','#FFFFBA','#BAFFC9','#BAE1FF','#D7BAFF','#FFB3E6','#FFCC99','#A8E6CF','#FFD93D','#FF6B9D'];
+// 5. パレットを「彩度高め・明度キープ」で微調整（韓国語学習のやわらかさは維持）
+const PASTEL = ['#FF8FA3','#FFC68C','#FFEE66','#7CE9A0','#7CC4FF','#C9A8FF','#FF8FD8','#FFB166','#6EE0B8','#FFCB1F','#FF3D85'];
 const RADII  = [22,28,35,42,50,58,68,78,90,104,120];
 
+/* === 1. 複数正解対応 ============================================
+ * 各語に optional `answers` 配列を持たせ、複数の日本語訳を正解扱いに。
+ * `answers` が無ければ `meaning` のみが正解（後方互換）。
+ * UI に表示する代表訳は引き続き `meaning`。
+ * ================================================================ */
 const CHAIN_NORMAL = [
-  {word:'네',                meaning:'はい',                roma:'ne'},
-  {word:'안녕',              meaning:'やあ',                roma:'annyeong'},
-  {word:'고마워',            meaning:'ありがとう',           roma:'gomawo'},
-  {word:'사랑해',            meaning:'愛してる',             roma:'saranghae'},
-  {word:'안녕하세요',        meaning:'こんにちは',           roma:'annyeonghaseyo'},
-  {word:'감사합니다',        meaning:'ありがとうございます',  roma:'gamsahamnida'},
-  {word:'사랑합니다',        meaning:'愛しています',         roma:'saranghamnida'},
-  {word:'만나서 반가워요',   meaning:'お会いできて嬉しい',    roma:'mannaseo bangawoyo'},
-  {word:'한국 좋아해요',     meaning:'韓国が好き',           roma:'hanguk joahaeyo'},
+  {word:'네',                meaning:'はい',                roma:'ne',                  answers:['はい','ええ','うん']},
+  {word:'안녕',              meaning:'やあ',                roma:'annyeong',            answers:['やあ','こんにちは','ハイ','元気']},
+  {word:'고마워',            meaning:'ありがとう',           roma:'gomawo',              answers:['ありがとう','どうも','サンキュー']},
+  {word:'사랑해',            meaning:'愛してる',             roma:'saranghae',           answers:['愛してる','大好き']},
+  {word:'안녕하세요',        meaning:'こんにちは',           roma:'annyeonghaseyo',      answers:['こんにちは','おはようございます','こんばんは']},
+  {word:'감사합니다',        meaning:'ありがとうございます',  roma:'gamsahamnida',        answers:['ありがとうございます','感謝します']},
+  {word:'사랑합니다',        meaning:'愛しています',         roma:'saranghamnida',       answers:['愛しています','愛してます']},
+  {word:'만나서 반가워요',   meaning:'お会いできて嬉しい',    roma:'mannaseo bangawoyo',  answers:['お会いできて嬉しい','はじめまして']},
+  {word:'한국 좋아해요',     meaning:'韓国が好き',           roma:'hanguk joahaeyo',     answers:['韓国が好き','韓国大好き']},
   {word:'한글 마스터 🇰🇷',  meaning:'ハングルマスター',      roma:'hangeul master'},
   {word:'한국 LEGEND 🌏',    meaning:'韓国レジェンド',       roma:'hanguk legend'},
 ];
 const CHAIN_KPOP = [
-  {word:'오빠',         meaning:'お兄さん(年上男性)', roma:'oppa'},
-  {word:'언니',         meaning:'お姉さん(年上女性)', roma:'eonni'},
-  {word:'대박',         meaning:'すごい!',           roma:'daebak'},
-  {word:'화이팅',       meaning:'ファイト!',         roma:'hwaiting'},
-  {word:'심쿵',         meaning:'胸キュン',           roma:'simkung'},
-  {word:'덕질',         meaning:'推し活',             roma:'deokjil'},
-  {word:'최애',         meaning:'最推し',             roma:'choeae'},
-  {word:'무대 짱',      meaning:'ステージ最高',        roma:'mudae jjang'},
-  {word:'평생 응원해',  meaning:'一生応援する',        roma:'pyeongsaeng eungwonhae'},
+  {word:'오빠',         meaning:'お兄さん(年上男性)', roma:'oppa',                   answers:['お兄さん(年上男性)','オッパ','年上の男性']},
+  {word:'언니',         meaning:'お姉さん(年上女性)', roma:'eonni',                  answers:['お姉さん(年上女性)','オンニ','年上の女性']},
+  {word:'대박',         meaning:'すごい!',           roma:'daebak',                  answers:['すごい!','やばい!','最高!']},
+  {word:'화이팅',       meaning:'ファイト!',         roma:'hwaiting',                answers:['ファイト!','頑張れ!','がんばれ!']},
+  {word:'심쿵',         meaning:'胸キュン',           roma:'simkung',                 answers:['胸キュン','キュン']},
+  {word:'덕질',         meaning:'推し活',             roma:'deokjil',                 answers:['推し活','オタ活']},
+  {word:'최애',         meaning:'最推し',             roma:'choeae',                  answers:['最推し','一番好き']},
+  {word:'무대 짱',      meaning:'ステージ最高',        roma:'mudae jjang',             answers:['ステージ最高','ステージ最強']},
+  {word:'평생 응원해',  meaning:'一生応援する',        roma:'pyeongsaeng eungwonhae',  answers:['一生応援する','ずっと応援']},
   {word:'아이돌 ⭐',    meaning:'アイドル',            roma:'aidol'},
   {word:'K-POP LEGEND 💜',meaning:'K-POPレジェンド',  roma:'k-pop legend'},
 ];
 const CHAIN_DAILY = [
-  {word:'좋아',                   meaning:'いいね',          roma:'joa'},
-  {word:'몰라',                   meaning:'知らない',         roma:'molla'},
-  {word:'배고파',                 meaning:'お腹すいた',       roma:'baegopa'},
-  {word:'맛있어',                 meaning:'おいしい',         roma:'masisseo'},
-  {word:'재미있어요',             meaning:'面白いです',       roma:'jaemiisseoyo'},
-  {word:'행복해요',               meaning:'幸せです',         roma:'haengbokhaeyo'},
-  {word:'사랑스러워요',           meaning:'愛らしいです',     roma:'sarangseureowoyo'},
-  {word:'한국에 가고 싶어요',     meaning:'韓国に行きたい',    roma:'hanguge gago sipeoyo'},
-  {word:'한국어 잘 해요',         meaning:'韓国語上手です',   roma:'hangugeo jal haeyo'},
+  {word:'좋아',                   meaning:'いいね',          roma:'joa',                   answers:['いいね','好き','OK']},
+  {word:'몰라',                   meaning:'知らない',         roma:'molla',                 answers:['知らない','わからない']},
+  {word:'배고파',                 meaning:'お腹すいた',       roma:'baegopa',               answers:['お腹すいた','腹減った']},
+  {word:'맛있어',                 meaning:'おいしい',         roma:'masisseo',              answers:['おいしい','うまい']},
+  {word:'재미있어요',             meaning:'面白いです',       roma:'jaemiisseoyo',          answers:['面白いです','楽しいです']},
+  {word:'행복해요',               meaning:'幸せです',         roma:'haengbokhaeyo',         answers:['幸せです','ハッピーです']},
+  {word:'사랑스러워요',           meaning:'愛らしいです',     roma:'sarangseureowoyo',      answers:['愛らしいです','可愛いです']},
+  {word:'한국에 가고 싶어요',     meaning:'韓国に行きたい',    roma:'hanguge gago sipeoyo',  answers:['韓国に行きたい','韓国行きたいです']},
+  {word:'한국어 잘 해요',         meaning:'韓国語上手です',   roma:'hangugeo jal haeyo',    answers:['韓国語上手です','韓国語うまい']},
   {word:'데일리 클리어 ⭐',       meaning:'デイリークリア',   roma:'daily clear'},
   {word:'한국 ULTIMATE 👑',       meaning:'韓国アルティメット',roma:'hanguk ultimate'},
 ];
@@ -97,17 +103,29 @@ class Body {
 class World {
   constructor(o){
     this.w=o.width; this.h=o.height;
-    this.gravity=o.gravity??0.55;
-    this.airDamp=0.9985; this.angularDamp=0.92; this.angularMax=0.18;
-    this.restitution=0.18;
-    this.friction=0.15;       // body-body tangential friction (lower = more slide)
-    this.mergeRange=1.08;     // merge fires when distance < (rA+rB) * mergeRange
+    // 5. 物理パラメータを微調整して「ヌルッ」「カチッ」な感触に
+    this.gravity=o.gravity??0.62;       // やや強め: 落下が機敏
+    this.airDamp=0.9986;                // 空気抵抗そのまま
+    this.angularDamp=0.90;              // 回転は早めに収束（ジッタ低減）
+    this.angularMax=0.16;               // 回転速度上限を控えめに
+    this.restitution=0.12;              // 跳ね返りを抑制（ぐにっとした接触感）
+    this.friction=0.22;                 // 接線摩擦やや強め（横滑り抑制）
+    this.mergeRange=1.06;               // 合体トリガを少し締めて「ピタッ」と合体
     this.ceiling=o.ceiling??80;
-    this.bodies=[]; this.solverIter=4;
+    this.bodies=[];
+    this.solverIter=6;                  // 反復回数増 → 重なり/食い込み低減
     this.events={merge:[],ceiling:[]};
+    this._ceilingFired=false;
   }
   on(e,f){this.events[e].push(f)}
-  emit(e,...a){for(const f of this.events[e])f(...a)}
+  emit(e,...a){
+    // 4. ceiling は 1回だけ通知（多重 triggerOver 防止）
+    if(e==='ceiling'){
+      if(this._ceilingFired) return;
+      this._ceilingFired = true;
+    }
+    for(const f of this.events[e])f(...a)
+  }
   add(b){this.bodies.push(b);return b}
   step(dt=1){
     const B=this.bodies;
@@ -173,14 +191,26 @@ class World {
         }
       }
     }
-    const now=performance.now();
+    /* === 4. オーバーフロー検出（厳密化） ============================
+     * - 生成から GRACE_MS 経過していない果物は無視（落下中の通過は誤検出しない）
+     * - 上端 (b.y - b.r) が CEILING を超えた状態が STAY_MS 連続したら ceiling 通知
+     * - frozen / markedForRemoval は除外
+     * - グレー失敗果物も他の果物と同じ扱い（除外しない）
+     * - emit は World 側で一度だけ通知（多重発火防止）
+     * ============================================================ */
+    const now = performance.now();
+    const GRACE_MS = 1500;   // 生成直後の猶予
+    const STAY_MS  = 900;    // 上端が線を越えた状態の継続秒数
     for(const b of B){
       if(b.frozen||b.markedForRemoval) continue;
-      const top=b.y-b.r, sp=Math.abs(b.vy);
-      if(top<this.ceiling && sp<0.6){
-        if(b.aboveCeilingAt===0) b.aboveCeilingAt=now;
-        else if(now-b.aboveCeilingAt>1500) this.emit('ceiling',b);
-      } else b.aboveCeilingAt=0;
+      if(now - b.bornAt < GRACE_MS){ b.aboveCeilingAt = 0; continue; }
+      const top = b.y - b.r;
+      if(top < this.ceiling){
+        if(b.aboveCeilingAt===0) b.aboveCeilingAt = now;
+        else if(now - b.aboveCeilingAt > STAY_MS) this.emit('ceiling', b);
+      } else {
+        b.aboveCeilingAt = 0;
+      }
     }
     if(B.some(b=>b.markedForRemoval)) this.bodies=B.filter(b=>!b.markedForRemoval);
   }
@@ -393,34 +423,114 @@ const UI = (()=>{
     }
   }
 
-  /* ===== Quiz overlay ===== */
-  function showQuiz(question, choices, onAnswer){
+  /* ===== Quiz overlay =====
+   * 仕様:
+   *  - correctSet (Set<string>) を渡し、選んだ候補の meaning がそこに含まれれば正解
+   *  - 10秒カウントダウン。タイムアウトは不正解として onAnswer(false,'timeout')
+   *  - 二重発火（連打・ダブルクリック）を opts.dataset.locked で抑止
+   *  - 正解/不正解/タイムアウト/closeQuiz いずれの経路でも必ずタイマー解除
+   */
+  let _quizTimer = 0;       // setInterval id for the per-second tick
+  let _quizClosing = false; // re-entry guard for finalize()
+  function clearQuizTimer(){
+    if(_quizTimer){ clearInterval(_quizTimer); _quizTimer = 0; }
+  }
+  function showQuiz(question, choices, correctSet, onAnswer){
     const root=$('quiz');
+    _quizClosing = false;
     $('quiz-word').textContent=question.word;
     const opts=$('quiz-opts'); opts.innerHTML='';
-    choices.forEach((c,i)=>{
+    delete opts.dataset.locked;
+
+    // タイマー表示（既存の .quiz-timer があれば再利用、無ければ生成）
+    let timerEl = root.querySelector('.quiz-timer');
+    if(!timerEl){
+      timerEl = document.createElement('div');
+      timerEl.className = 'quiz-timer';
+      const card = root.querySelector('.quiz-card');
+      card.insertBefore(timerEl, card.querySelector('.quiz-opts'));
+    }
+    // DOM は一度だけ構築 → 以降は width / text だけ更新（CSS トランジションを活かす）
+    timerEl.innerHTML = `<div class="qt-bar"><div class="qt-fill"></div></div><div class="qt-num"></div>`;
+    const qtFill = timerEl.querySelector('.qt-fill');
+    const qtNum  = timerEl.querySelector('.qt-num');
+    const TOTAL = 10;
+    let remain = TOTAL;
+    const renderTimer = () => {
+      const pct = Math.max(0, (remain/TOTAL)*100);
+      qtFill.style.width = pct + '%';
+      qtNum.textContent = remain + ' 秒';
+      qtNum.classList.toggle('low', remain<=3);
+    };
+    renderTimer();
+
+    const finalize = (correct, reason)=>{
+      if(_quizClosing) return;
+      _quizClosing = true;
+      clearQuizTimer();
+      opts.dataset.locked = '1';
+      // ハイライト（タイムアウト時は全選択肢を wrong に）
+      if(reason === 'timeout'){
+        [...opts.children].forEach(x=>x.classList.add('wrong'));
+      }
+      setTimeout(()=>{
+        root.classList.remove('show');
+        opts.innerHTML=''; delete opts.dataset.locked;
+        timerEl.innerHTML='';
+        onAnswer(correct, reason||(correct?'correct':'wrong'));
+      }, correct?260:reason==='timeout'?620:480);
+    };
+
+    choices.forEach((c)=>{
       const b=document.createElement('button');
       b.type='button'; b.className='quiz-opt'; b.textContent=c.meaning;
       b.addEventListener('click',()=>{
-        if(opts.dataset.locked) return;
+        if(opts.dataset.locked) return;          // 二重発火防止
         opts.dataset.locked='1';
-        const correct = c.word===question.word;
+        const correct = correctSet.has(c.meaning);
         b.classList.add(correct?'correct':'wrong');
         [...opts.children].forEach(x=>{ if(x!==b) x.classList.add('dim'); });
-        setTimeout(()=>{
-          root.classList.remove('show');
-          opts.innerHTML=''; delete opts.dataset.locked;
-          onAnswer(correct);
-        }, correct?280:520);
+        finalize(correct, correct?'correct':'wrong');
       },{passive:true});
       opts.appendChild(b);
     });
+
+    // 1秒ごとに更新、0でタイムアウト
+    clearQuizTimer();
+    _quizTimer = setInterval(()=>{
+      remain -= 1;
+      if(remain <= 0){
+        renderTimer();
+        finalize(false, 'timeout');
+      } else {
+        renderTimer();
+      }
+    }, 1000);
+
     root.classList.add('show');
   }
-  function hideQuiz(){ const r=$('quiz'); r.classList.remove('show'); $('quiz-opts').innerHTML=''; }
+  function hideQuiz(){
+    clearQuizTimer();
+    _quizClosing = true;       // 中断: 既に submit 済みでも安全
+    const r=$('quiz'); r.classList.remove('show');
+    $('quiz-opts').innerHTML='';
+    const t=r.querySelector('.quiz-timer'); if(t) t.innerHTML='';
+  }
   function isQuizOpen(){ return $('quiz').classList.contains('show'); }
 
-  return { setScore, setBest, setCombo, pop, showHover, hideHover, shake, setNextWord, setMute, renderTree, renderChainList, open, close, showOver, renderGlossary, renderCustomList, openCustomEdit, showQuiz, hideQuiz, isQuizOpen };
+  /* ===== 2. スタート画面 ===== */
+  function showStart(){
+    const s=$('start'); if(!s) return;
+    s.classList.add('show');
+    // ボタン状態をリセット
+    s.querySelectorAll('.sm').forEach(b=>b.classList.remove('picked'));
+    const go=$('b-start');
+    if(go){ go.disabled=true; go.textContent='カテゴリを選んでね'; }
+  }
+  function hideStart(){ const s=$('start'); if(s) s.classList.remove('show'); }
+  function isStartOpen(){ const s=$('start'); return !!(s && s.classList.contains('show')); }
+
+  return { setScore, setBest, setCombo, pop, showHover, hideHover, shake, setNextWord, setMute, renderTree, renderChainList, open, close, showOver, renderGlossary, renderCustomList, openCustomEdit, showQuiz, hideQuiz, isQuizOpen, showStart, hideStart, isStartOpen };
 })();
 
 /* ========== Game ========== */
@@ -440,8 +550,13 @@ const Game = (()=>{
   let maxLevelThisRun=1, learnedThisRun=new Set();
   let nextLevel=pickSpawn();
   let dropX=WIDTH/2, lastDropAt=0;
-  const dropCooldown=550;
+  // 5. 落下クールダウンを短縮 → 「ポンポン落とせる」テンポに
+  const dropCooldown=400;
   let gameOver=false, hoverBody=null, bgPulse=0, gameOverTo=0;
+  // 2. スタート画面: 初回ロード時 false。Start 押下時に true へ。
+  let started=false;
+  // 5. マージ時の小さなパーティクル群
+  const particles=[];
 
   function pickSpawn(){
     const cap=Math.max(1, Math.min(4, chain.length-1));
@@ -488,14 +603,55 @@ const Game = (()=>{
   }
 
   function buildWorld(){
-    world=new World({width:WIDTH,height:HEIGHT,gravity:0.55,ceiling:CEILING});
+    // 5. 物理は World 側のデフォルトに任せる（gravity 等を集約）
+    world=new World({width:WIDTH,height:HEIGHT,ceiling:CEILING});
     world.on('merge',onMerge);
     world.on('ceiling',onCeiling);
   }
+  /* === 5. パーティクル =============================================
+   * マージ瞬間に小さな粒を放出して「キラッ」とした即時フィードバック。
+   * 過剰にならないよう数・寿命は控えめ。
+   * ============================================================== */
+  function spawnParticles(cx, cy, color, n){
+    for(let i=0;i<n;i++){
+      const a = Math.random()*Math.PI*2;
+      const s = 1.5 + Math.random()*3.2;
+      particles.push({
+        x:cx, y:cy,
+        vx:Math.cos(a)*s, vy:Math.sin(a)*s - 1.2,
+        r: 2 + Math.random()*2.4,
+        life: 1, decay: 0.04 + Math.random()*0.02,
+        color
+      });
+    }
+  }
+  function stepParticles(){
+    if(particles.length===0) return;
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
+      p.x+=p.vx; p.y+=p.vy;
+      p.vy+=0.18; p.vx*=0.985;
+      p.life -= p.decay;
+      if(p.life<=0) particles.splice(i,1);
+    }
+  }
+  function drawParticles(){
+    for(const p of particles){
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function onMerge(a,b){
     if(a.markedForRemoval||b.markedForRemoval) return;
     a.markedForRemoval=true; b.markedForRemoval=true;
     const newLv=a.level+1, cx=(a.x+b.x)/2, cy=(a.y+b.y)/2;
+    // 5. マージ位置にパーティクル
+    spawnParticles(cx, cy, PASTEL[Math.min(newLv-1, PASTEL.length-1)], 10 + Math.min(12, newLv*2));
     const base=newLv*newLv*10, now=performance.now();
     if(now-lastMergeAt<COMBO_TIMEOUT) combo++; else combo=1;
     lastMergeAt=now;
@@ -527,7 +683,11 @@ const Game = (()=>{
   }
   function onCeiling(){ if(!gameOver) triggerOver(); }
   function triggerOver(){
-    gameOver=true; sfx('over'); UI.shake(20);
+    // 4. 多重発火ガード（emit 側でも防いでいるが念のため）
+    if(gameOver) return;
+    gameOver=true;
+    UI.hideQuiz();        // 3. ゲームオーバー時は必ずタイマー解除
+    sfx('over'); UI.shake(20);
     for(const b of world.bodies){if(!b.frozen && b.data && b.data.word) Storage.addMistake(b.data.word)}
     Storage.setHighScore(score,mode); Storage.incrementPlay();
     if(gameOverTo) clearTimeout(gameOverTo);
@@ -538,21 +698,41 @@ const Game = (()=>{
     for(let i=r.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[r[i],r[j]]=[r[j],r[i]];}
     return r;
   }
+  /* === 1. 複数正解対応 ============================================
+   * - 質問語の `answers`（無ければ [meaning]）を「正解集合」として保持。
+   * - distractor 抽出時に、その語の表記（meaning / answers 全部）が
+   *   正解集合と重複する場合は除外（混同防止）。
+   * - 表示は各候補の `meaning` を使う（後方互換）。
+   * - 正解判定は onAnswer 側で「選んだ候補の meaning が正解集合に含まれるか」。
+   * ================================================================ */
+  function answersOf(w){
+    if(!w) return [];
+    if(Array.isArray(w.answers) && w.answers.length) return w.answers.slice();
+    return w.meaning ? [w.meaning] : [];
+  }
   function buildQuiz(question){
-    const seen=new Set([question.meaning]);
-    const pool=chain.filter(w=>{
-      if(w.word===question.word) return false;
+    const correctSet = new Set(answersOf(question));
+    correctSet.add(question.meaning);
+    const pool = chain.filter(w => {
+      if(w.word === question.word) return false;
+      // 候補語の表記いずれかが正解集合と重複したら距離が近すぎるので除外
+      const allMeans = answersOf(w).concat([w.meaning]);
+      return !allMeans.some(m => correctSet.has(m));
+    });
+    // 候補同士の meaning 重複も除外
+    const seen = new Set();
+    const dedup = pool.filter(w => {
       if(seen.has(w.meaning)) return false;
       seen.add(w.meaning); return true;
     });
-    const distractors=shuffleArr(pool).slice(0,2);
+    const distractors = shuffleArr(dedup).slice(0,2);
     while(distractors.length<2){
-      distractors.push({word:'', meaning:'？？？'});
+      distractors.push({word:'__none__', meaning:'？？？'});
     }
     return shuffleArr([question, ...distractors]);
   }
   function tryDrop(){
-    if(gameOver) return;
+    if(gameOver || !started) return;          // 3. 開始前は落下しない
     if(UI.isQuizOpen()) return;
     const now=performance.now();
     if(now-lastDropAt<dropCooldown) return;
@@ -560,8 +740,13 @@ const Game = (()=>{
     const lv=nextLevel, question=chain[lv-1];
     const x=dropX;
     const choices=buildQuiz(question);
-    UI.showQuiz(question, choices, (correct)=>{
+    // 1. 正解集合（answers + meaning）を構築して UI に渡す
+    const correctSet = new Set(answersOf(question));
+    correctSet.add(question.meaning);
+    UI.showQuiz(question, choices, correctSet, (correct, reason)=>{
+      // 3. タイムアウトも不正解扱い → グレー失敗果物
       dropFruit(x, lv, !correct);
+      if(!correct && question && question.word) Storage.addMistake(question.word);
     });
   }
   function dropFruit(x, lv, failed){
@@ -656,10 +841,13 @@ const Game = (()=>{
   }
 
   function frame(){
-    if(!gameOver) world.step(1);
+    // 2. スタート前 / ゲームオーバー時は物理停止
+    if(!gameOver && started) world.step(1);
     clear(); drawCeiling();
     for(const b of world.bodies) drawBody(b);
-    drawGuide();
+    // 5. パーティクルは果物の上に、ガイドの下に重ねる
+    stepParticles(); drawParticles();
+    if(started) drawGuide();
     if(combo>0 && performance.now()-lastMergeAt>COMBO_TIMEOUT){
       if(combo>1){combo=0; UI.setCombo(1)}
     }
@@ -730,7 +918,10 @@ const Game = (()=>{
     if(e.key===' '||e.key==='Enter'){e.preventDefault();tryDrop()}
   });
 
-  /* ===== Mode / restart ===== */
+  /* ===== Mode / restart =====
+   * 2. ゲーム中にモード変更 → 既存の restart ロジックで盤面リセット。
+   *    ゲーム未開始（!started）でも setMode を呼べば即時開始する。
+   */
   function setMode(m){
     if(m==='custom'){
       const list=Storage.getActiveCustom();
@@ -741,6 +932,8 @@ const Game = (()=>{
     }
     rng = (m==='daily') ? mulberry32(dailySeed()) : Math.random;
     document.querySelectorAll('.m').forEach(b=>b.classList.toggle('active', b.getAttribute('data-mode')===m));
+    started = true;
+    UI.hideStart();
     restart();
   }
   function openCustomPicker(){
@@ -769,6 +962,7 @@ const Game = (()=>{
     maxLevelThisRun=1; learnedThisRun=new Set();
     gameOver=false; hoverBody=null; bgPulse=0;
     dropX=WIDTH/2; lastDropAt=0;
+    particles.length=0;            // 5. パーティクルもクリア
     nextLevel=pickSpawn();
     buildWorld();
     UI.setScore(0); UI.setCombo(1);
@@ -841,7 +1035,42 @@ const Game = (()=>{
       window.visualViewport.addEventListener('scroll',refit);
     }
 
-    setMode('normal');
+    /* ===== 2. スタート画面 ===== */
+    // 初回ロード: ゲームを始めず、まず空盤面と Start 画面を表示。
+    mode='normal'; chain=CHAINS.normal; rng=Math.random;
+    buildWorld();
+    UI.setScore(0); UI.setCombo(1);
+    UI.renderTree(chain, Storage.get().maxLevelReached);
+    drawNext();
+
+    let pickedMode = null;
+    const startModes = document.getElementById('start-modes');
+    const bStart = document.getElementById('b-start');
+    if(startModes && bStart){
+      startModes.querySelectorAll('.sm').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          startModes.querySelectorAll('.sm').forEach(b=>b.classList.remove('picked'));
+          btn.classList.add('picked');
+          pickedMode = btn.getAttribute('data-mode');
+          bStart.disabled = false;
+          bStart.textContent = (pickedMode==='custom') ? '自作リストを選ぶ' : 'START';
+        });
+      });
+      bStart.addEventListener('click',()=>{
+        if(!pickedMode) return;
+        if(pickedMode==='custom'){
+          // 自作リスト未選択なら既存ピッカーを開く（start は背後に残す → キャンセル時に戻れる）
+          const active = Storage.getActiveCustom();
+          if(!active || !active.words || active.words.length<3){
+            openCustomPicker();
+            return;
+          }
+        }
+        setMode(pickedMode);
+      });
+    }
+    UI.showStart();
+
     requestAnimationFrame(frame);
   }
 
