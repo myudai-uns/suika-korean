@@ -107,10 +107,10 @@ class World {
     // === 物理パラメータ（軽め＋高摩擦で「安定して積める」感触） ===
     this.gravity=o.gravity??0.55;       // 重力やや弱め: 軽く落ちる
     this.airDamp=0.9985;                // 空気抵抗そのまま
-    this.angularDamp=0.82;              // 回転を強めに減衰（横転を抑制）
-    this.angularMax=0.10;               // 回転速度上限を低く（コロコロ転がらない）
-    this.restitution=0.08;              // 跳ね返りほぼ無し（"カツン"より"スッ"）
-    this.friction=0.55;                 // 摩擦大幅 UP: 横滑り/コロコロを抑制
+    this.angularDamp=0.96;              // 緩やかに減衰（自然な惰性回転）
+    this.angularMax=Infinity;           // 物理回転は無制限（視覚は drawBody 側で上向き固定）
+    this.restitution=0.08;              // 跳ね返りほぼ無し
+    this.friction=0.55;                 // 摩擦大: 横滑り抑制（スピンは collision 接線で発生）
     this.mergeRange=1.06;               // 合体トリガ控えめ
     this.ceiling=o.ceiling??80;
     this.bodies=[];
@@ -134,8 +134,11 @@ class World {
       if(b.frozen||b.static) continue;
       b.vy+=this.gravity*dt; b.vx*=this.airDamp; b.vy*=this.airDamp;
       b.angularVel*=this.angularDamp;
-      if(b.angularVel> this.angularMax) b.angularVel= this.angularMax;
-      if(b.angularVel<-this.angularMax) b.angularVel=-this.angularMax;
+      // 物理上の回転速度はクランプしない（衝突応答の正確さを保つ）
+      if(isFinite(this.angularMax)){
+        if(b.angularVel> this.angularMax) b.angularVel= this.angularMax;
+        if(b.angularVel<-this.angularMax) b.angularVel=-this.angularMax;
+      }
       b.x+=b.vx*dt; b.y+=b.vy*dt; b.angle+=b.angularVel*dt;
       if(b.scale<1) b.scale=Math.min(1,b.scale+0.12);
     }
@@ -787,11 +790,19 @@ const Game = (()=>{
     drawBody({x,y:SPAWN_Y,r,level:lv,data:{...chain[lv-1],color:PASTEL[lv-1]},angle:0,scale:1}, 0.85);
   }
   function drawBody(b, alpha=1){
+    /* === 描画は常に上向き ============================================
+     * 物理(b.angle)は無制限に回り続けるが、見た目は読みやすさを優先して
+     * 完全に上向き固定で描く。円形なので回転による形状差は無く、
+     * 内部の物理計算には一切影響しない。
+     * ============================================================== */
     const r=b.r*(b.scale??1);
     const failed=!!(b.data && b.data.failed);
     const baseColor=b.data.color||PASTEL[b.level-1];
     const color=failed ? grayscale(baseColor) : baseColor;
-    ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.angle||0); ctx.globalAlpha=alpha*(failed?0.85:1);
+    ctx.save();
+    ctx.translate(b.x,b.y);
+    // ※ あえて ctx.rotate を呼ばない（visualAngle = 0 固定で表示）
+    ctx.globalAlpha=alpha*(failed?0.85:1);
     ctx.beginPath(); ctx.arc(0,r*0.15,r,0,Math.PI*2); ctx.fillStyle='rgba(0,0,0,0.06)'; ctx.fill();
     const grad=ctx.createRadialGradient(-r*0.35,-r*0.4,r*0.1,0,0,r);
     grad.addColorStop(0, failed?'#f0f0f0':'#fff'); grad.addColorStop(0.25,lighten(color,0.15)); grad.addColorStop(1,color);
