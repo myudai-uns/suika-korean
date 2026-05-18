@@ -1,0 +1,73 @@
+/* ============================================================
+ * 한글수박 v2 — 初級単語データ
+ * ------------------------------------------------------------
+ * 初級単語モード用の韓国語データ。各エントリの構造:
+ *   { id, korean, answer, choices: [answer, distractor1, distractor2] }
+ *
+ * 使い方:
+ *   import { beginnerWords } from "./beginnerWords.js";
+ * ============================================================ */
+export const beginnerWords = [
+  { id: 1,  korean: "가다",       answer: "行く",            choices: ["行く", "来る", "走る"] },
+  { id: 2,  korean: "오다",       answer: "来る",            choices: ["来る", "帰る", "会う"] },
+  { id: 3,  korean: "먹다",       answer: "食べる",          choices: ["食べる", "飲む", "作る"] },
+  { id: 4,  korean: "마시다",     answer: "飲む",            choices: ["飲む", "洗う", "食べる"] },
+  { id: 5,  korean: "보다",       answer: "見る",            choices: ["見る", "聞く", "探す"] },
+  { id: 6,  korean: "듣다",       answer: "聞く",            choices: ["聞く", "話す", "見る"] },
+  { id: 7,  korean: "말하다",     answer: "話す",            choices: ["話す", "書く", "聞く"] },
+  { id: 8,  korean: "읽다",       answer: "読む",            choices: ["読む", "歌う", "書く"] },
+  { id: 9,  korean: "쓰다",       answer: "書く",            choices: ["書く", "読む", "消す"] },
+  { id: 10, korean: "공부하다",   answer: "勉強する",        choices: ["勉強する", "働く", "練習する"] },
+  { id: 11, korean: "일하다",     answer: "働く",            choices: ["働く", "休む", "勉強する"] },
+  { id: 12, korean: "자다",       answer: "寝る",            choices: ["寝る", "起きる", "休む"] },
+  { id: 13, korean: "일어나다",   answer: "起きる",          choices: ["起きる", "座る", "寝る"] },
+  { id: 14, korean: "만나다",     answer: "会う",            choices: ["会う", "別れる", "呼ぶ"] },
+  { id: 15, korean: "좋아하다",   answer: "好きだ",          choices: ["好きだ", "嫌いだ", "欲しい"] },
+  { id: 16, korean: "사랑하다",   answer: "愛する",          choices: ["愛する", "憎む", "信じる"] },
+  { id: 17, korean: "싫어하다",   answer: "嫌いだ",          choices: ["嫌いだ", "好きだ", "怖がる"] },
+  { id: 18, korean: "배우다",     answer: "学ぶ",            choices: ["学ぶ", "教える", "覚える"] },
+  { id: 19, korean: "가르치다",   answer: "教える",          choices: ["教える", "学ぶ", "説明する"] },
+  { id: 20, korean: "이해하다",   answer: "理解する",        choices: ["理解する", "忘れる", "疑う"] },
+
+  { id: 21, korean: "사람",       answer: "人",              choices: ["人", "動物", "友達"] },
+  { id: 22, korean: "친구",       answer: "友達",            choices: ["友達", "家族", "先生"] },
+  { id: 23, korean: "가족",       answer: "家族",            choices: ["家族", "恋人", "友達"] },
+  { id: 24, korean: "엄마",       answer: "母",              choices: ["母", "祖母", "姉"] },
+  { id: 25, korean: "아빠",       answer: "父",              choices: ["父", "兄", "祖父"] },
+  { id: 26, korean: "형",         answer: "兄",              choices: ["兄", "弟", "父"] },
+  { id: 27, korean: "누나",       answer: "姉",              choices: ["姉", "妹", "母"] },
+  { id: 28, korean: "동생",       answer: "弟・妹",          choices: ["弟・妹", "兄", "友達"] },
+  { id: 29, korean: "학생",       answer: "学生",            choices: ["学生", "先生", "会社員"] },
+  { id: 30, korean: "선생님",     answer: "先生",            choices: ["先生", "学生", "医者"] },
+  { id: 31, korean: "회사원",     answer: "会社員",          choices: ["会社員", "公務員", "学生"] },
+  { id: 32, korean: "의사",       answer: "医者",            choices: ["医者", "看護師", "薬剤師"] },
+  { id: 33, korean: "간호사",     answer: "看護師",          choices: ["看護師", "医者", "先生"] },
+  { id: 34, korean: "경찰",       answer: "警察",            choices: ["警察", "消防士", "軍人"] },
+  { id: 35, korean: "사장님",     answer: "社長",            choices: ["社長", "店員", "先生"] },
+  { id: 36, korean: "손님",       answer: "お客様",          choices: ["お客様", "店員", "友達"] },
+  { id: 37, korean: "남자",       answer: "男",              choices: ["男", "子ども", "女性"] },
+  { id: 38, korean: "여자",       answer: "女",              choices: ["女", "男性", "母"] },
+  { id: 39, korean: "아이",       answer: "子ども",          choices: ["子ども", "大人", "学生"] },
+  { id: 40, korean: "어른",       answer: "大人",            choices: ["大人", "老人", "子ども"] },
+
+  { id: 41, korean: "학교",       answer: "学校",            choices: ["学校", "病院", "図書館"] },
+  { id: 42, korean: "회사",       answer: "会社",            choices: ["会社", "学校", "工場"] },
+  { id: 43, korean: "집",         answer: "家",              choices: ["家", "学校", "部屋"] },
+  { id: 44, korean: "방",         answer: "部屋",            choices: ["部屋", "廊下", "机"] },
+  { id: 45, korean: "화장실",     answer: "トイレ",          choices: ["トイレ", "浴室", "台所"] },
+  { id: 46, korean: "식당",       answer: "食堂・レストラン", choices: ["食堂・レストラン", "カフェ", "病院"] },
+  { id: 47, korean: "카페",       answer: "カフェ",          choices: ["カフェ", "レストラン", "公園"] },
+  { id: 48, korean: "병원",       answer: "病院",            choices: ["病院", "薬局", "学校"] },
+  { id: 49, korean: "은행",       answer: "銀行",            choices: ["銀行", "郵便局", "ホテル"] },
+  { id: 50, korean: "편의점",     answer: "コンビニ",        choices: ["コンビニ", "スーパー", "市場"] },
+  { id: 51, korean: "시장",       answer: "市場",            choices: ["市場", "公園", "会社"] },
+  { id: 52, korean: "공항",       answer: "空港",            choices: ["空港", "駅", "港"] },
+  { id: 53, korean: "역",         answer: "駅",              choices: ["駅", "空港", "停留所"] },
+  { id: 54, korean: "도서관",     answer: "図書館",          choices: ["図書館", "学校", "書店"] },
+  { id: 55, korean: "교실",       answer: "教室",            choices: ["教室", "職員室", "図書館"] },
+  { id: 56, korean: "약국",       answer: "薬局",            choices: ["薬局", "病院", "銀行"] },
+  { id: 57, korean: "호텔",       answer: "ホテル",          choices: ["ホテル", "旅館", "病院"] },
+  { id: 58, korean: "백화점",     answer: "デパート",        choices: ["デパート", "スーパー", "市場"] },
+  { id: 59, korean: "마트",       answer: "スーパー",        choices: ["スーパー", "コンビニ", "市場"] },
+  { id: 60, korean: "공원",       answer: "公園",            choices: ["公園", "広場", "学校"] },
+];

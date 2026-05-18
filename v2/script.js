@@ -2,6 +2,8 @@
  * 한글수박 v2 — single-file game logic
  * ============================================================ */
 
+import { beginnerWords } from "./beginnerWords.js";
+
 /* ========== Word data ========== */
 // 5. パレットを「彩度高め・明度キープ」で微調整（韓国語学習のやわらかさは維持）
 const PASTEL = ['#FF8FA3','#FFC68C','#FFEE66','#7CE9A0','#7CC4FF','#C9A8FF','#FF8FD8','#FFB166','#6EE0B8','#FFCB1F','#FF3D85'];
@@ -133,9 +135,24 @@ async function loadHardChain(){
   return CHAIN_HARD_LOADING;
 }
 
+/* === 初級単語モード ===========================================
+ * 単語と果物（色・大きさ）を固定しない。各果物には beginnerWords から
+ * ランダムに選んだ語を表示し、合体判定はレベルのみで行う。
+ * 合体後の語も beginnerWords から新たにランダム選択する。
+ * 3択クイズの選択肢は各単語の `choices` をそのまま使い、表示順だけ
+ * シャッフルする。
+ *
+ * CHAIN_BEGINNER は「レベル数（=PASTEL/RADII の長さに合わせて 11）」
+ * を確保するためのプレースホルダ。表示語は実行時に変わるため
+ * `word`/`meaning` は飾り。
+ * ============================================================ */
+const CHAIN_BEGINNER = Array.from({length: 11}, (_, i) => ({
+  word: '?', meaning: '初級単語 Lv.'+(i+1), roma: ''
+}));
+
 const CHAINS = {
   normal:CHAIN_NORMAL, kpop:CHAIN_KPOP, daily:CHAIN_DAILY, review:CHAIN_NORMAL,
-  hanja:CHAIN_HANJA, goyu:CHAIN_GOYU,
+  hanja:CHAIN_HANJA, goyu:CHAIN_GOYU, beginner:CHAIN_BEGINNER,
 };
 const SPAWN_LEVELS = [1,1,1,2,2,2,3,3,4];
 
@@ -393,7 +410,12 @@ const UI = (()=>{
   }
   function renderGlossary(){
     const d=Storage.get(), L=d.learnedWords;
-    const all=[]; Object.values(CHAINS).forEach(c=>c.forEach((it,i)=>all.push({...it,level:i+1})));
+    const all=[];
+    // 初級単語モードはレベル↔単語が固定されないため、プレースホルダ chain は除外
+    Object.entries(CHAINS).forEach(([key,c])=>{
+      if(key==='beginner') return;
+      c.forEach((it,i)=>all.push({...it,level:i+1}));
+    });
     const seen=new Set(), uniq=all.filter(w=>{if(seen.has(w.word))return false;seen.add(w.word);return true});
     const learned=uniq.filter(w=>L[w.word]).length;
     $('g-stats').innerHTML=`
@@ -638,8 +660,23 @@ const Game = (()=>{
     }
     return Math.min(cap, SPAWN_LEVELS[Math.floor(rng()*SPAWN_LEVELS.length)]);
   }
+  // 初級単語モード: beginnerWords からランダム選択し、内部形式に正規化
+  function pickBeginnerWord(){
+    const w = beginnerWords[Math.floor(rng()*beginnerWords.length)];
+    return {
+      word: w.korean,
+      meaning: w.answer,
+      roma: '',
+      answers: [w.answer],
+      choices: w.choices,
+    };
+  }
   // HARD モード: 同 level の 4 variants からランダム選択。それ以外: chain[lv-1] をそのまま返す
   function pickVariant(level){
+    if(mode==='beginner'){
+      // 初級単語は単語と果物の色/種類を固定しない（レベル不問で同じプールからランダム）
+      return pickBeginnerWord();
+    }
     if(mode==='hard' && chainVariants && chainVariants[level-1] && chainVariants[level-1].length){
       const arr = chainVariants[level-1];
       return arr[Math.floor(rng()*arr.length)];
@@ -827,9 +864,18 @@ const Game = (()=>{
     // HARD モードでは nextData が variant ランダム選択結果。それ以外は chain[lv-1] と一致
     const question = nextData || chain[lv-1];
     const x=dropX;
-    const choices=buildQuiz(question);
-    const correctSet = new Set(answersOf(question));
-    correctSet.add(question.meaning);
+    let choices, correctSet;
+    if(mode==='beginner' && Array.isArray(question.choices) && question.choices.length){
+      // 初級単語: choices をそのまま使う（他語からの distractor 流用は廃止）
+      // 表示順だけシャッフル
+      const opts = question.choices.map(c => ({word: question.word, meaning: c}));
+      choices = shuffleArr(opts);
+      correctSet = new Set([question.meaning]);
+    } else {
+      choices = buildQuiz(question);
+      correctSet = new Set(answersOf(question));
+      correctSet.add(question.meaning);
+    }
     UI.showQuiz(question, choices, correctSet, (correct, reason)=>{
       dropFruit(x, lv, !correct, question);
       if(!correct && question && question.word) Storage.addMistake(question.word);
