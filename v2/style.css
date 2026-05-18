@@ -155,52 +155,43 @@ body{
 }
 @media (hover:hover) and (pointer:fine){#game{cursor:none}}
 
-/* ===== 出題: 韓国語の大表示（ケース上部・天井ラインより上） ===== */
+/* ===== 出題: 韓国語の大表示（ケース前面・テキストのみ／枠背景なし） ===== */
 .korean-display{
   position:absolute;
   top:6px;
   left:50%;
   transform:translateX(-50%);
-  z-index:6;
+  z-index:20;                           /* ケース・果物の前面 */
   pointer-events:none;
   font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI",-apple-system,system-ui,sans-serif;
   font-weight:900;
-  font-size:clamp(26px,5.6vh,52px);
+  font-size:clamp(30px,6.8vh,60px);
   line-height:1.05;
-  color:#c43e6e;
+  color:#c43e6e;                        /* ピンクの文字色（既存）を維持 */
   text-shadow:
-    0 2px 0 #fff,
-    0 0 6px rgba(255,255,255,.95),
-    0 4px 14px rgba(196,62,110,.18);
-  letter-spacing:.01em;
+    0 0 10px rgba(255,255,255,1),
+    0 0 18px rgba(255,255,255,.9),
+    0 2px 4px rgba(255,255,255,1),
+    0 4px 14px rgba(196,62,110,.25);
+  letter-spacing:.02em;
   white-space:nowrap;
-  max-width:90%;
+  max-width:96%;
   text-align:center;
-  padding:2px 14px;
-  background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,247,250,.7));
-  border:2px solid #ffaecf;
-  border-bottom-width:3px;
-  border-radius:14px;
-  box-shadow:0 3px 0 #e190b9, 0 4px 14px rgba(196,62,110,.18);
 }
 .korean-display[hidden]{display:none}
-.korean-display.flash-correct{
-  animation:kdCorrect .5s ease-out;
-}
-.korean-display.flash-wrong{
-  animation:kdWrong .5s ease-out;
-}
+.korean-display.flash-correct{ animation:kdCorrect .5s ease-out }
+.korean-display.flash-wrong  { animation:kdWrong   .5s ease-out }
 @keyframes kdCorrect{
-  0%{transform:translateX(-50%) scale(1);background:linear-gradient(180deg,#d4ffe0,#a8f0bc)}
-  50%{transform:translateX(-50%) scale(1.08)}
-  100%{transform:translateX(-50%) scale(1)}
+  0%  {transform:translateX(-50%) scale(1);   color:#c43e6e}
+  50% {transform:translateX(-50%) scale(1.14);color:#2d8a52}
+  100%{transform:translateX(-50%) scale(1);   color:#c43e6e}
 }
 @keyframes kdWrong{
-  0%,100%{transform:translateX(-50%) translateX(0)}
-  20%{transform:translateX(-50%) translateX(-6px);background:linear-gradient(180deg,#ffd8d8,#ffb8b8)}
-  40%{transform:translateX(-50%) translateX(6px)}
-  60%{transform:translateX(-50%) translateX(-4px)}
-  80%{transform:translateX(-50%) translateX(4px)}
+  0%,100%{transform:translateX(-50%) translateX(0); color:#c43e6e}
+  20% {transform:translateX(-50%) translateX(-7px); color:#d44d4d}
+  40% {transform:translateX(-50%) translateX( 7px); color:#d44d4d}
+  60% {transform:translateX(-50%) translateX(-5px); color:#d44d4d}
+  80% {transform:translateX(-50%) translateX( 5px); color:#c43e6e}
 }
 
 /* ===== 出題: 3本スライドバー ===== */
@@ -208,17 +199,16 @@ body{
   flex:0 0 auto;
   display:flex;
   flex-direction:column;
-  gap:6px;
-  padding:6px 0 0;
+  gap:4px;
+  padding:2px 0 0;                      /* ケースとの隙間を最小化 */
   width:100%;
-  max-width:520px;
-  margin:0 auto;
+  margin:0 auto;                         /* width は JS でキャンバスと一致させる */
 }
 .answer-bars[hidden]{display:none}
 
 .ab{
   position:relative;
-  height:44px;
+  height:42px;
   background:linear-gradient(180deg,#fff,#fff7fa);
   border:2px solid #ffaecf;
   border-bottom-width:3px;
