@@ -75,6 +75,64 @@ const CHAIN_GOYU = [
   {word:'아홉',   meaning:'ここのつ', roma:'ahop'},
   {word:'열',     meaning:'とお',   roma:'yeol'},
 ];
+/* === HARD MODE データ構造 ============================================
+ * hard_words.json をフェッチして格納する。
+ * 形式:
+ *   {
+ *     levels: [
+ *       { lv:1, variants: [ {word,meaning,roma,answers?}, ... 4個 ] },
+ *       ...
+ *     ]
+ *   }
+ *
+ * - CHAIN_HARD_REP: 代表バリアント（各 level の 1個目）を flat 配列にしたもの。
+ *   既存の chain[level-1] 互換アクセス（buildQuiz の distractor 抽出、ツリー
+ *   表示、初期描画など）に使う。
+ * - CHAIN_HARD_VARIANTS: 各 level の 4 variants をそのまま保持。実際に
+ *   spawn/merge で表示するときは pickVariant(level) でランダム選択する。
+ *
+ * Merge 仕様（重要）:
+ *   果物の合体判定は LEVEL ベース。表示中の単語が異なっていても、同じ
+ *   level なら合体する（既存 World.step の `a.level===b.level` 判定をそのまま使用）。
+ * ================================================================ */
+let CHAIN_HARD_REP = null;
+let CHAIN_HARD_VARIANTS = null;
+let CHAIN_HARD_LOADING = null;   // 同時呼び出し防止用 Promise キャッシュ
+
+async function loadHardChain(){
+  if(CHAIN_HARD_REP) return true;
+  if(CHAIN_HARD_LOADING) return CHAIN_HARD_LOADING;
+  CHAIN_HARD_LOADING = (async ()=>{
+    try{
+      // 静的 JSON ファイルを fetch（GitHub Pages 対応、バックエンド不要）
+      const res = await fetch('hard_words.json', {cache:'no-cache'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      if(!data || !Array.isArray(data.levels)) throw new Error('schema');
+      const reps = [];
+      const vars = [];
+      for(const lvObj of data.levels){
+        const v = (lvObj && Array.isArray(lvObj.variants)) ? lvObj.variants.filter(x=>x && x.word) : [];
+        if(v.length===0) continue;
+        reps.push({...v[0]});
+        vars.push(v);
+      }
+      if(reps.length===0) throw new Error('empty');
+      CHAIN_HARD_REP = reps;
+      CHAIN_HARD_VARIANTS = vars;
+      return true;
+    } catch(e){
+      console.warn('[hard mode] dataset load failed → fallback', e);
+      CHAIN_HARD_REP = null;
+      CHAIN_HARD_VARIANTS = null;
+      return false;
+    } finally {
+      CHAIN_HARD_LOADING = null;
+    }
+  })();
+  return CHAIN_HARD_LOADING;
+}
+
 const CHAINS = {
   normal:CHAIN_NORMAL, kpop:CHAIN_KPOP, daily:CHAIN_DAILY, review:CHAIN_NORMAL,
   hanja:CHAIN_HANJA, goyu:CHAIN_GOYU,
@@ -555,9 +613,13 @@ const Game = (()=>{
   const SCALE=0.85;
 
   let world, mode='normal', chain=CHAINS.normal, rng=Math.random;
+  // HARD モード時のみ陳列される variants 配列（chain と同じ長さ、各要素は配列）
+  let chainVariants = null;
   let score=0, combo=0, lastMergeAt=0;
   let maxLevelThisRun=1, learnedThisRun=new Set();
   let nextLevel=pickSpawn();
+  // 次に落ちる果物の表示 variant（HARD では variants からランダム選択、他は chain[lv-1] と同一）
+  let nextData=null;
   let dropX=WIDTH/2, lastDropAt=0;
   // 5. 落下クールダウンを短縮 → 「ポンポン落とせる」テンポに
   const dropCooldown=400;
@@ -575,6 +637,19 @@ const Game = (()=>{
       if(ls.length && rng()<0.55) return ls[Math.floor(rng()*ls.length)];
     }
     return Math.min(cap, SPAWN_LEVELS[Math.floor(rng()*SPAWN_LEVELS.length)]);
+  }
+  // HARD モード: 同 level の 4 variants からランダム選択。それ以外: chain[lv-1] をそのまま返す
+  function pickVariant(level){
+    if(mode==='hard' && chainVariants && chainVariants[level-1] && chainVariants[level-1].length){
+      const arr = chainVariants[level-1];
+      return arr[Math.floor(rng()*arr.length)];
+    }
+    return chain[level-1];
+  }
+  // 次の果物の level と variant を同時に決定（quiz と spawn で同じ単語を保証）
+  function rollNextSpawn(){
+    nextLevel = pickSpawn();
+    nextData  = pickVariant(nextLevel);
   }
 
   /* ===== Audio ===== */
@@ -672,7 +747,9 @@ const Game = (()=>{
     UI.pop(rect.left+cx*sx, rect.top+cy*sy, '+'+gained, combo>1);
 
     if(newLv<=chain.length){
-      const data=chain[newLv-1], r=RADII[newLv-1];
+      // HARD では合体結果も variant をランダム選択（同 level なら表示語が異なって OK）
+      const data = pickVariant(newLv);
+      const r=RADII[newLv-1];
       const body=new Body({x:cx,y:cy,radius:r,level:newLv,data:{...data,color:PASTEL[newLv-1]}});
       body.scale=0.2; body.lastMergeFlash=performance.now();
       world.add(body);
@@ -741,30 +818,33 @@ const Game = (()=>{
     return shuffleArr([question, ...distractors]);
   }
   function tryDrop(){
-    if(gameOver || !started) return;          // 3. 開始前は落下しない
+    if(gameOver || !started) return;
     if(UI.isQuizOpen()) return;
     const now=performance.now();
     if(now-lastDropAt<dropCooldown) return;
     lastDropAt=now;
-    const lv=nextLevel, question=chain[lv-1];
+    const lv=nextLevel;
+    // HARD モードでは nextData が variant ランダム選択結果。それ以外は chain[lv-1] と一致
+    const question = nextData || chain[lv-1];
     const x=dropX;
     const choices=buildQuiz(question);
-    // 1. 正解集合（answers + meaning）を構築して UI に渡す
     const correctSet = new Set(answersOf(question));
     correctSet.add(question.meaning);
     UI.showQuiz(question, choices, correctSet, (correct, reason)=>{
-      // 3. タイムアウトも不正解扱い → グレー失敗果物
-      dropFruit(x, lv, !correct);
+      dropFruit(x, lv, !correct, question);
       if(!correct && question && question.word) Storage.addMistake(question.word);
     });
   }
-  function dropFruit(x, lv, failed){
+  function dropFruit(x, lv, failed, variant){
     if(gameOver) return;
-    const data=chain[lv-1], r=RADII[lv-1];
+    // 表示は variant（指定があればそれ、なければ chain[lv-1]）。
+    // 合体判定は World 側で `a.level===b.level` のみを見るので、表示の word が
+    // バリアント間で異なっていても同 level なら必ず合体する。
+    const data = variant || chain[lv-1], r=RADII[lv-1];
     const cx=Math.max(r,Math.min(WIDTH-r,x));
     const body=new Body({x:cx,y:SPAWN_Y,radius:r,level:lv,data:{...data,color:PASTEL[lv-1],failed:!!failed}});
     body.scale=0.5; world.add(body);
-    sfx('drop'); nextLevel=pickSpawn(); drawNext();
+    sfx('drop'); rollNextSpawn(); drawNext();
   }
 
   /* ===== Render ===== */
@@ -790,7 +870,8 @@ const Game = (()=>{
     ctx.strokeStyle='rgba(196,62,110,0.35)'; ctx.setLineDash([4,6]); ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.moveTo(x,SPAWN_Y+r); ctx.lineTo(x,HEIGHT); ctx.stroke();
     ctx.setLineDash([]);
-    drawBody({x,y:SPAWN_Y,r,level:lv,data:{...chain[lv-1],color:PASTEL[lv-1]},angle:0,scale:1}, 0.85);
+    const data = nextData || chain[lv-1];
+    drawBody({x,y:SPAWN_Y,r,level:lv,data:{...data,color:PASTEL[lv-1]},angle:0,scale:1}, 0.85);
   }
   function drawBody(b, alpha=1){
     /* === 描画は常に上向き ============================================
@@ -840,7 +921,7 @@ const Game = (()=>{
   function drawNext(){
     const w=nextC.width, h=nextC.height;
     nextX.clearRect(0,0,w,h);
-    const lv=nextLevel, data=chain[lv-1];
+    const lv=nextLevel, data = nextData || chain[lv-1];
     const r=Math.min(RADII[lv-1],w*0.4), cx=w/2, cy=h/2;
     nextX.save();
     const grad=nextX.createRadialGradient(cx-r*0.35,cy-r*0.4,r*0.1,cx,cy,r);
@@ -1032,16 +1113,28 @@ const Game = (()=>{
   });
 
   /* ===== Mode / restart =====
-   * 2. ゲーム中にモード変更 → 既存の restart ロジックで盤面リセット。
-   *    ゲーム未開始（!started）でも setMode を呼べば即時開始する。
+   * - ゲーム中にモード変更 → 既存 restart で盤面リセット。
+   * - ゲーム未開始でも setMode を呼べば即時開始。
+   * - HARD は JSON を fetch する非同期処理あり。失敗時はノーマルにフォールバック。
    */
-  function setMode(m){
+  async function setMode(m){
+    if(m==='hard'){
+      const ok = await loadHardChain();
+      if(!ok || !CHAIN_HARD_REP){
+        alert('HARD モードのデータ読み込みに失敗しました。ノーマルモードに切り替えます。');
+        m='normal';
+      } else {
+        mode=m;
+        chain = CHAIN_HARD_REP;            // 代表バリアントを chain として
+        chainVariants = CHAIN_HARD_VARIANTS;
+      }
+    }
     if(m==='custom'){
       const list=Storage.getActiveCustom();
       if(!list || !list.words || list.words.length<3){ openCustomPicker(); return; }
-      mode=m; chain=list.words;
-    } else {
-      mode=m; chain=CHAINS[m]||CHAINS.normal;
+      mode=m; chain=list.words; chainVariants=null;
+    } else if(m!=='hard') {
+      mode=m; chain=CHAINS[m]||CHAINS.normal; chainVariants=null;
     }
     rng = (m==='daily') ? mulberry32(dailySeed()) : Math.random;
     document.querySelectorAll('.m').forEach(b=>b.classList.toggle('active', b.getAttribute('data-mode')===m));
@@ -1075,8 +1168,8 @@ const Game = (()=>{
     maxLevelThisRun=1; learnedThisRun=new Set();
     gameOver=false; hoverBody=null; bgPulse=0;
     dropX=WIDTH/2; lastDropAt=0;
-    particles.length=0;            // 5. パーティクルもクリア
-    nextLevel=pickSpawn();
+    particles.length=0;
+    rollNextSpawn();               // level + variant をまとめて決定
     buildWorld();
     UI.setScore(0); UI.setCombo(1);
     UI.renderTree(chain, Storage.get().maxLevelReached);
@@ -1100,6 +1193,9 @@ const Game = (()=>{
   /* ===== Boot ===== */
   function init(){
     document.querySelectorAll('.m').forEach(b=>b.addEventListener('click',()=>{
+      // ハンバーガーメニュー内のモード切替は選択後に閉じる
+      const menuEl = $('menu');
+      if(menuEl) menuEl.classList.remove('show');
       const mm=b.getAttribute('data-mode');
       if(mm==='custom') openCustomPicker();
       else setMode(mm);
@@ -1171,17 +1267,21 @@ const Game = (()=>{
           bStart.textContent = (pickedMode==='custom') ? '自作リストを選ぶ' : 'START';
         });
       });
-      bStart.addEventListener('click',()=>{
+      bStart.addEventListener('click', async ()=>{
         if(!pickedMode) return;
         if(pickedMode==='custom'){
-          // 自作リスト未選択なら既存ピッカーを開く（start は背後に残す → キャンセル時に戻れる）
           const active = Storage.getActiveCustom();
           if(!active || !active.words || active.words.length<3){
             openCustomPicker();
             return;
           }
         }
-        setMode(pickedMode);
+        // HARD は JSON フェッチで少し待つことがあるのでローディング表示
+        if(pickedMode==='hard'){
+          bStart.disabled = true;
+          bStart.textContent = '読込中...';
+        }
+        await setMode(pickedMode);
       });
     }
     UI.showStart();

@@ -1,0 +1,105 @@
+{
+  "_comment": "Hard Mode vocabulary. Each entry in `levels` corresponds to ONE fruit level (Lv.1 = first entry, Lv.10 = last). Inside each level, `variants` holds 4 Korean vocabulary items. When a fruit of that level is spawned or merged, the game randomly picks ONE of the 4 variants for display. Merging is based on fruit LEVEL only — two fruits of the same level merge regardless of which variant text each one shows. The `answers` array on each variant lists additional acceptable Japanese answers for the multi-answer quiz validation. Loaded statically from the project directory; works on GitHub Pages without any backend.",
+  "version": 1,
+  "levels": [
+    {
+      "lv": 1,
+      "variants": [
+        {"word":"네",  "meaning":"はい",         "roma":"ne",   "answers":["はい","ええ"]},
+        {"word":"예",  "meaning":"はい(丁寧)",   "roma":"ye",   "answers":["はい(丁寧)","はい","ええ"]},
+        {"word":"응",  "meaning":"うん",         "roma":"eung", "answers":["うん","ええ"]},
+        {"word":"어",  "meaning":"ええ",         "roma":"eo",   "answers":["ええ","うん"]}
+      ]
+    },
+    {
+      "lv": 2,
+      "variants": [
+        {"word":"안녕",       "meaning":"やあ",         "roma":"annyeong",       "answers":["やあ","ハイ"]},
+        {"word":"여보세요",   "meaning":"もしもし",      "roma":"yeoboseyo",      "answers":["もしもし"]},
+        {"word":"반가워",     "meaning":"はじめまして",  "roma":"bangawo",        "answers":["はじめまして","会えて嬉しい"]},
+        {"word":"잘 가",      "meaning":"バイバイ",      "roma":"jal ga",         "answers":["バイバイ","さようなら"]}
+      ]
+    },
+    {
+      "lv": 3,
+      "variants": [
+        {"word":"고마워",  "meaning":"ありがとう",   "roma":"gomawo",  "answers":["ありがとう","どうも"]},
+        {"word":"미안해",  "meaning":"ごめんね",     "roma":"mianhae", "answers":["ごめんね","ごめん","すまない"]},
+        {"word":"괜찮아",  "meaning":"大丈夫",       "roma":"gwaenchana", "answers":["大丈夫","平気"]},
+        {"word":"천천히",  "meaning":"ゆっくり",     "roma":"cheoncheonhi", "answers":["ゆっくり","ゆっくりと"]}
+      ]
+    },
+    {
+      "lv": 4,
+      "variants": [
+        {"word":"맛있어",  "meaning":"おいしい",     "roma":"masisseo",  "answers":["おいしい","うまい"]},
+        {"word":"배고파",  "meaning":"お腹すいた",   "roma":"baegopa",   "answers":["お腹すいた","空腹"]},
+        {"word":"먹어",    "meaning":"食べる",       "roma":"meogeo",    "answers":["食べる","食べて"]},
+        {"word":"마셔",    "meaning":"飲む",         "roma":"masyeo",    "answers":["飲む","飲んで"]}
+      ]
+    },
+    {
+      "lv": 5,
+      "variants": [
+        {"word":"행복해",  "meaning":"幸せ",         "roma":"haengbokhae", "answers":["幸せ","ハッピー"]},
+        {"word":"슬퍼",    "meaning":"悲しい",       "roma":"seulpeo",     "answers":["悲しい"]},
+        {"word":"화나",    "meaning":"怒る",         "roma":"hwana",       "answers":["怒る","ムカつく"]},
+        {"word":"무서워",  "meaning":"怖い",         "roma":"museowo",     "answers":["怖い"]}
+      ]
+    },
+    {
+      "lv": 6,
+      "variants": [
+        {"word":"가다",   "meaning":"行く",         "roma":"gada",   "answers":["行く"]},
+        {"word":"오다",   "meaning":"来る",         "roma":"oda",    "answers":["来る"]},
+        {"word":"보다",   "meaning":"見る",         "roma":"boda",   "answers":["見る"]},
+        {"word":"하다",   "meaning":"する",         "roma":"hada",   "answers":["する","やる"]}
+      ]
+    },
+    {
+      "lv": 7,
+      "variants": [
+        {"word":"학교",   "meaning":"学校",         "roma":"hakgyo",  "answers":["学校"]},
+        {"word":"회사",   "meaning":"会社",         "roma":"hoesa",   "answers":["会社"]},
+        {"word":"집",     "meaning":"家",           "roma":"jip",     "answers":["家","自宅"]},
+        {"word":"가게",   "meaning":"店",           "roma":"gage",    "answers":["店","お店"]}
+      ]
+    },
+    {
+      "lv": 8,
+      "variants": [
+        {"word":"오랜만이야",  "meaning":"久しぶり",       "roma":"oraenmaniya",  "answers":["久しぶり","お久しぶり"]},
+        {"word":"잘 지내",     "meaning":"元気にしてね",   "roma":"jal jinae",    "answers":["元気にしてね","お元気で"]},
+        {"word":"조심해",      "meaning":"気をつけて",     "roma":"josimhae",     "answers":["気をつけて","注意"]},
+        {"word":"축하해",      "meaning":"おめでとう",     "roma":"chukhahae",    "answers":["おめでとう"]}
+      ]
+    },
+    {
+      "lv": 9,
+      "variants": [
+        {"word":"너무 좋아요",     "meaning":"とても好きです",     "roma":"neomu joayo",       "answers":["とても好きです","大好きです"]},
+        {"word":"정말 미안해요",   "meaning":"本当にごめんなさい", "roma":"jeongmal mianhaeyo","answers":["本当にごめんなさい","本当にすみません"]},
+        {"word":"잘 부탁해요",     "meaning":"よろしくお願いします","roma":"jal butakhaeyo",   "answers":["よろしくお願いします","よろしく"]},
+        {"word":"수고하셨어요",    "meaning":"お疲れ様でした",      "roma":"sugohasyeosseoyo", "answers":["お疲れ様でした","お疲れ様"]}
+      ]
+    },
+    {
+      "lv": 10,
+      "variants": [
+        {"word":"한국어 마스터 🇰🇷",  "meaning":"韓国語マスター",   "roma":"hangugeo master",   "answers":["韓国語マスター"]},
+        {"word":"완벽한 발음 ⭐",     "meaning":"完璧な発音",       "roma":"wanbyeokhan bareum","answers":["完璧な発音"]},
+        {"word":"문법 천재 👑",       "meaning":"文法の天才",       "roma":"munbeop cheonjae",  "answers":["文法の天才"]},
+        {"word":"유창한 회화 🏆",     "meaning":"流暢な会話",       "roma":"yuchanghan hoehwa", "answers":["流暢な会話"]}
+      ]
+    },
+    {
+      "lv": 11,
+      "variants": [
+        {"word":"HARD LEGEND 💎",    "meaning":"ハードレジェンド", "roma":"hard legend",        "answers":["ハードレジェンド","ハードモード制覇"]},
+        {"word":"한국 정복 🌏",       "meaning":"韓国征服",         "roma":"hanguk jeongbok",    "answers":["韓国征服","ハングル制覇"]},
+        {"word":"네이티브 ✨",        "meaning":"ネイティブ",       "roma":"neitibeu",           "answers":["ネイティブ","ネイティブ級"]},
+        {"word":"한글 신 🔥",         "meaning":"ハングル神",       "roma":"hangeul sin",        "answers":["ハングル神","韓国語の神"]}
+      ]
+    }
+  ]
+}
