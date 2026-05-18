@@ -155,6 +155,136 @@ body{
 }
 @media (hover:hover) and (pointer:fine){#game{cursor:none}}
 
+/* ===== 出題: 韓国語の大表示（ケース上部・天井ラインより上） ===== */
+.korean-display{
+  position:absolute;
+  top:6px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:6;
+  pointer-events:none;
+  font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI",-apple-system,system-ui,sans-serif;
+  font-weight:900;
+  font-size:clamp(26px,5.6vh,52px);
+  line-height:1.05;
+  color:#c43e6e;
+  text-shadow:
+    0 2px 0 #fff,
+    0 0 6px rgba(255,255,255,.95),
+    0 4px 14px rgba(196,62,110,.18);
+  letter-spacing:.01em;
+  white-space:nowrap;
+  max-width:90%;
+  text-align:center;
+  padding:2px 14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,247,250,.7));
+  border:2px solid #ffaecf;
+  border-bottom-width:3px;
+  border-radius:14px;
+  box-shadow:0 3px 0 #e190b9, 0 4px 14px rgba(196,62,110,.18);
+}
+.korean-display[hidden]{display:none}
+.korean-display.flash-correct{
+  animation:kdCorrect .5s ease-out;
+}
+.korean-display.flash-wrong{
+  animation:kdWrong .5s ease-out;
+}
+@keyframes kdCorrect{
+  0%{transform:translateX(-50%) scale(1);background:linear-gradient(180deg,#d4ffe0,#a8f0bc)}
+  50%{transform:translateX(-50%) scale(1.08)}
+  100%{transform:translateX(-50%) scale(1)}
+}
+@keyframes kdWrong{
+  0%,100%{transform:translateX(-50%) translateX(0)}
+  20%{transform:translateX(-50%) translateX(-6px);background:linear-gradient(180deg,#ffd8d8,#ffb8b8)}
+  40%{transform:translateX(-50%) translateX(6px)}
+  60%{transform:translateX(-50%) translateX(-4px)}
+  80%{transform:translateX(-50%) translateX(4px)}
+}
+
+/* ===== 出題: 3本スライドバー ===== */
+.answer-bars{
+  flex:0 0 auto;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  padding:6px 0 0;
+  width:100%;
+  max-width:520px;
+  margin:0 auto;
+}
+.answer-bars[hidden]{display:none}
+
+.ab{
+  position:relative;
+  height:44px;
+  background:linear-gradient(180deg,#fff,#fff7fa);
+  border:2px solid #ffaecf;
+  border-bottom-width:3px;
+  border-radius:24px;
+  overflow:hidden;
+  touch-action:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.ab-fill{
+  position:absolute;
+  top:0;left:0;bottom:0;
+  width:0;
+  background:linear-gradient(90deg,rgba(255,142,182,.25),rgba(255,111,161,.55));
+  z-index:1;
+  pointer-events:none;
+  transition:width .18s ease-out;
+}
+.ab.dragging .ab-fill{transition:none}
+.ab-text{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:900;color:#7a3454;
+  z-index:2;
+  pointer-events:none;
+  text-shadow:0 1px 0 #fff;
+}
+.ab-hint{
+  position:absolute;
+  right:14px;top:50%;
+  transform:translateY(-50%);
+  font-size:10px;font-weight:700;
+  color:rgba(196,62,110,.42);
+  letter-spacing:.5px;
+  pointer-events:none;
+  z-index:2;
+}
+.ab.dragging .ab-hint,
+.ab.committed .ab-hint{opacity:0;transition:opacity .15s}
+.ab-knob{
+  position:absolute;
+  top:50%;left:4px;
+  transform:translateY(-50%);
+  width:36px;height:36px;
+  background:linear-gradient(180deg,#ff8eb6,#ff6fa1);
+  color:#fff;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:900;line-height:1;
+  box-shadow:0 2px 0 #d44d80, 0 2px 6px rgba(0,0,0,.18);
+  z-index:3;
+  cursor:grab;
+  touch-action:none;
+  transition:left .18s ease-out;
+}
+.ab.dragging .ab-knob{transition:none;cursor:grabbing}
+.ab.correct{border-color:#4dbb77;background:linear-gradient(180deg,#d8ffe6,#b8f0c8)}
+.ab.correct .ab-text{color:#1f7a3d}
+.ab.correct .ab-knob{background:linear-gradient(180deg,#7ad99a,#4dbb77);box-shadow:0 2px 0 #2d8a52, 0 2px 6px rgba(0,0,0,.18)}
+.ab.wrong{border-color:#d44d4d;background:linear-gradient(180deg,#ffd8d8,#ffb8b8)}
+.ab.wrong .ab-text{color:#8a1e1e}
+.ab.wrong .ab-knob{background:linear-gradient(180deg,#ec7373,#d44d4d);box-shadow:0 2px 0 #8a1e1e, 0 2px 6px rgba(0,0,0,.18)}
+
+/* 初級単語モード時はエッジドラッグ用 drop-zone を不要にする */
+body.beginner-mode .drop-zone{display:none}
+
 /* ===== Popups & hover ===== */
 .popups{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:55}
 .pop{

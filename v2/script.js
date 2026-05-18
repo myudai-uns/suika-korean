@@ -687,6 +687,7 @@ const Game = (()=>{
   function rollNextSpawn(){
     nextLevel = pickSpawn();
     nextData  = pickVariant(nextLevel);
+    if(mode === 'beginner') Beginner.refresh();
   }
 
   /* ===== Audio ===== */
@@ -856,6 +857,8 @@ const Game = (()=>{
   }
   function tryDrop(){
     if(gameOver || !started) return;
+    // 初級単語モードはスライドバーで回答→落下するため、タップ/エッジドラッグの落下は無効化
+    if(mode === 'beginner') return;
     if(UI.isQuizOpen()) return;
     const now=performance.now();
     if(now-lastDropAt<dropCooldown) return;
@@ -864,23 +867,160 @@ const Game = (()=>{
     // HARD モードでは nextData が variant ランダム選択結果。それ以外は chain[lv-1] と一致
     const question = nextData || chain[lv-1];
     const x=dropX;
-    let choices, correctSet;
-    if(mode==='beginner' && Array.isArray(question.choices) && question.choices.length){
-      // 初級単語: choices をそのまま使う（他語からの distractor 流用は廃止）
-      // 表示順だけシャッフル
-      const opts = question.choices.map(c => ({word: question.word, meaning: c}));
-      choices = shuffleArr(opts);
-      correctSet = new Set([question.meaning]);
-    } else {
-      choices = buildQuiz(question);
-      correctSet = new Set(answersOf(question));
-      correctSet.add(question.meaning);
-    }
+    const choices = buildQuiz(question);
+    const correctSet = new Set(answersOf(question));
+    correctSet.add(question.meaning);
     UI.showQuiz(question, choices, correctSet, (correct, reason)=>{
       dropFruit(x, lv, !correct, question);
       if(!correct && question && question.word) Storage.addMistake(question.word);
     });
   }
+
+  /* ===== 初級単語モード UI: 韓国語大表示 + 3本スライドバー ==========
+   * - currentWord = nextData（rollNextSpawn で再ランダム）
+   * - 上部表示: nextData.word（韓国語）
+   * - 3本バー: shuffle(nextData.choices) を割り当て
+   * - 正解バーをスライドしきると dropFruit を発火、不正解なら failed 果物
+   * - 操作はバーのスライドのみ（タップ/エッジドラッグでは出題しない）
+   * ============================================================== */
+  const Beginner = (()=>{
+    const koreanEl = document.getElementById('korean-display');
+    const barsEl   = document.getElementById('answer-bars');
+    const bars     = barsEl ? Array.from(barsEl.querySelectorAll('.ab')) : [];
+    const KNOB_PAD = 4;
+    const KNOB_W   = 36;
+    const THRESHOLD = 0.82;
+    let activeBar = null;
+    let dragState = null;
+
+    function getX(e){
+      if(e.touches && e.touches.length) return e.touches[0].clientX;
+      if(e.changedTouches && e.changedTouches.length) return e.changedTouches[0].clientX;
+      return e.clientX;
+    }
+    function resetBar(bar){
+      bar.classList.remove('dragging','correct','wrong','committed');
+      const knob = bar.querySelector('.ab-knob');
+      const fill = bar.querySelector('.ab-fill');
+      if(knob) knob.style.left = '';
+      if(fill) fill.style.width = '';
+    }
+    function isActive(){ return mode === 'beginner' && started && !gameOver; }
+
+    function refresh(){
+      if(!nextData) return;
+      if(koreanEl){
+        koreanEl.textContent = nextData.word || '';
+        koreanEl.classList.remove('flash-correct','flash-wrong');
+      }
+      const src = Array.isArray(nextData.choices) && nextData.choices.length===3
+        ? nextData.choices.slice()
+        : [nextData.meaning, '？', '？'];
+      // 表示順だけシャッフル（中身は固定）
+      const display = shuffleArr(src);
+      bars.forEach((bar, i) => {
+        resetBar(bar);
+        const txt = bar.querySelector('.ab-text');
+        if(txt) txt.textContent = display[i] || '';
+        bar.dataset.meaning = display[i] || '';
+      });
+    }
+
+    function setActive(on){
+      if(koreanEl) koreanEl.hidden = !on;
+      if(barsEl)   barsEl.hidden   = !on;
+      if(on) refresh();
+      else bars.forEach(resetBar);
+      document.body.classList.toggle('beginner-mode', !!on);
+    }
+
+    function commit(answerStr){
+      if(!isActive()) return;
+      const now = performance.now();
+      if(now - lastDropAt < dropCooldown) return;
+      lastDropAt = now;
+      const question = nextData;
+      if(!question) return;
+      const correct = (answerStr === question.meaning);
+      if(koreanEl){
+        koreanEl.classList.remove('flash-correct','flash-wrong');
+        void koreanEl.offsetWidth;
+        koreanEl.classList.add(correct ? 'flash-correct' : 'flash-wrong');
+      }
+      dropFruit(dropX, nextLevel, !correct, question);
+      if(!correct && question.word) Storage.addMistake(question.word);
+      // dropFruit 内で rollNextSpawn -> refresh が走るので、バーは新しい choices に更新済み
+    }
+
+    function beginDrag(bar, e){
+      if(!isActive()) return;
+      if(bar.classList.contains('committed')) return;
+      const r = bar.getBoundingClientRect();
+      dragState = {
+        startX: getX(e),
+        maxTravel: Math.max(40, r.width - KNOB_W - KNOB_PAD*2),
+        knob: bar.querySelector('.ab-knob'),
+        fill: bar.querySelector('.ab-fill'),
+      };
+      activeBar = bar;
+      bar.classList.add('dragging');
+      if(e.cancelable) e.preventDefault();
+    }
+    function onMove(e){
+      if(!activeBar || !dragState) return;
+      const x = getX(e);
+      const delta = Math.max(0, Math.min(dragState.maxTravel, x - dragState.startX));
+      const pct = delta / dragState.maxTravel;
+      dragState.knob.style.left  = (KNOB_PAD + delta) + 'px';
+      dragState.fill.style.width = (KNOB_PAD + KNOB_W + delta) + 'px';
+      if(pct >= THRESHOLD){
+        const bar = activeBar;
+        const answer = bar.dataset.meaning || '';
+        const correct = !!(nextData && answer === nextData.meaning);
+        bar.classList.remove('dragging');
+        bar.classList.add('committed', correct ? 'correct' : 'wrong');
+        dragState.knob.style.left  = (KNOB_PAD + dragState.maxTravel) + 'px';
+        dragState.fill.style.width = '100%';
+        activeBar = null;
+        dragState = null;
+        commit(answer);
+        setTimeout(()=>resetBar(bar), 420);
+      }
+      if(e.cancelable) e.preventDefault();
+    }
+    function onEnd(){
+      if(!activeBar) return;
+      const bar = activeBar;
+      activeBar = null;
+      dragState = null;
+      bar.classList.remove('dragging');
+      if(!bar.classList.contains('committed')){
+        const knob = bar.querySelector('.ab-knob');
+        const fill = bar.querySelector('.ab-fill');
+        if(knob) knob.style.left = '';
+        if(fill) fill.style.width = '';
+      }
+    }
+
+    function init(){
+      bars.forEach(bar=>{
+        const knob = bar.querySelector('.ab-knob');
+        if(knob){
+          knob.addEventListener('mousedown', e=>beginDrag(bar,e));
+          knob.addEventListener('touchstart', e=>beginDrag(bar,e), {passive:false});
+        }
+        bar.addEventListener('mousedown', e=>{ if(e.target!==knob) beginDrag(bar,e); });
+        bar.addEventListener('touchstart', e=>{ if(e.target!==knob) beginDrag(bar,e); }, {passive:false});
+      });
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup',   onEnd);
+      document.addEventListener('touchmove', onMove, {passive:false});
+      document.addEventListener('touchend',  onEnd);
+      document.addEventListener('touchcancel', onEnd);
+    }
+
+    return { init, setActive, refresh, isActive };
+  })();
   function dropFruit(x, lv, failed, variant){
     if(gameOver) return;
     // 表示は variant（指定があればそれ、なければ chain[lv-1]）。
@@ -1023,7 +1163,8 @@ const Game = (()=>{
   }
   // タップ対象が UI なら通常タッチハンドラに任せる
   // drop-zone は pointer-events:none なので e.target にはならない（透過）
-  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .menu, .quiz, .start'));
+  // 初級単語モードのスライドバー（.answer-bars）もここで除外し、ジェスチャは Beginner 側で処理
+  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .menu, .quiz, .start, .answer-bars'));
 
   // Mouse: keep the canvas-only behavior (cursor doesn't obscure view)
   canvas.addEventListener('mousemove',onMove);
@@ -1186,6 +1327,8 @@ const Game = (()=>{
     document.querySelectorAll('.m').forEach(b=>b.classList.toggle('active', b.getAttribute('data-mode')===m));
     started = true;
     UI.hideStart();
+    // 初級単語モード時のみ専用 UI を出す（restart 経由で refresh も走る）
+    Beginner.setActive(mode === 'beginner');
     restart();
   }
   function openCustomPicker(){
@@ -1238,6 +1381,8 @@ const Game = (()=>{
 
   /* ===== Boot ===== */
   function init(){
+    // 初級単語モード用スライダの 1 回限り初期化（イベントは常駐、UI 表示は setActive で切替）
+    Beginner.init();
     document.querySelectorAll('.m').forEach(b=>b.addEventListener('click',()=>{
       // ハンバーガーメニュー内のモード切替は選択後に閉じる
       const menuEl = $('menu');

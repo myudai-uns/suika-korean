@@ -47,7 +47,31 @@
 
   <main class="board" id="board">
     <canvas id="game" width="420" height="640"></canvas>
+    <!-- 出題: 韓国語の大表示（ケース上部・点線ラインの上、初級単語モードのみ表示） -->
+    <div class="korean-display" id="korean-display" hidden></div>
   </main>
+
+  <!-- 出題: 3本スライドバー（初級単語モードのみ表示） -->
+  <div class="answer-bars" id="answer-bars" hidden>
+    <div class="ab" data-idx="0">
+      <div class="ab-fill"></div>
+      <div class="ab-text"></div>
+      <div class="ab-hint">→ スライドして回答</div>
+      <div class="ab-knob" aria-label="スライドして回答">›</div>
+    </div>
+    <div class="ab" data-idx="1">
+      <div class="ab-fill"></div>
+      <div class="ab-text"></div>
+      <div class="ab-hint">→ スライドして回答</div>
+      <div class="ab-knob" aria-label="スライドして回答">›</div>
+    </div>
+    <div class="ab" data-idx="2">
+      <div class="ab-fill"></div>
+      <div class="ab-text"></div>
+      <div class="ab-hint">→ スライドして回答</div>
+      <div class="ab-knob" aria-label="スライドして回答">›</div>
+    </div>
+  </div>
 
   <!-- 画面最下端 5px の不可視エッジトリガ。指を下端まで引き下ろすと出題 -->
   <div class="drop-zone" id="drop-zone" aria-hidden="true"></div>
