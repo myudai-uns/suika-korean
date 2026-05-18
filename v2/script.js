@@ -877,187 +877,142 @@ const Game = (()=>{
     });
   }
 
-  /* ===== 初級単語モード UI: 韓国語大表示 + 3本スライドバー ==========
+  /* ===== 初級単語モード UI: 韓国語大表示 + 縦3分割回答ゾーン ========
    * - currentWord = nextData（rollNextSpawn で再ランダム）
-   * - 上部表示: nextData.word（韓国語、ケース前面に重畳・テキストのみ）
-   * - 3本バー: shuffle(nextData.choices) を割り当て
-   * - 操作: バーをスライドして「離した位置」のX座標が落下位置
-   *     - 正解の場合: そのX座標から果物を落とす
-   *     - 不正解の場合: 落下せず、ミス記録＋次の問題へ進む
-   * - タップ/エッジドラッグでは出題しない
+   * - 韓国語: drawKoreanWord() でキャンバスに直接描画。
+   *   - 描画順: 背景 → 韓国語 → 既存果物 → drawGuide(次の果物)
+   *   - 結果として z 優先順は 次の果物 > 単語 > ケース/背景 となる
+   * - 下部 3 ゾーンに choices をシャッフル配置（ボタンでなく判定領域）
+   * - ドラッグ: 既存の指/マウス操作で dropX が更新される（横移動の連動）
+   * - 離した瞬間:
+   *     ・clientY からどのゾーンに乗っているか判定（ゾーン外なら無効）
+   *     ・clientX を canvas X に変換し落下位置として採用
+   *     ・正解 → dropFruit。不正解 → 落とさず次問題へ進む
    * ============================================================== */
   const Beginner = (()=>{
-    const koreanEl = document.getElementById('korean-display');
-    const barsEl   = document.getElementById('answer-bars');
-    const bars     = barsEl ? Array.from(barsEl.querySelectorAll('.ab')) : [];
-    const KNOB_PAD = 4;
-    const KNOB_W   = 36;
-    // スライド最低距離（バー幅に対する割合）。これ未満で離した場合はキャンセル
-    const MIN_SLIDE = 0.25;
-    let activeBar = null;
-    let dragState = null;
+    const zonesEl = document.getElementById('answer-zones');
+    const zones   = zonesEl ? Array.from(zonesEl.querySelectorAll('.az')) : [];
 
-    function getX(e){
-      if(e.touches && e.touches.length) return e.touches[0].clientX;
-      if(e.changedTouches && e.changedTouches.length) return e.changedTouches[0].clientX;
-      return e.clientX;
-    }
-    function resetBar(bar){
-      bar.classList.remove('dragging','correct','wrong','committed');
-      const knob = bar.querySelector('.ab-knob');
-      const fill = bar.querySelector('.ab-fill');
-      if(knob) knob.style.left = '';
-      if(fill) fill.style.width = '';
-    }
     function isActive(){ return mode === 'beginner' && started && !gameOver; }
 
+    function clearZoneStates(){
+      zones.forEach(z=>z.classList.remove('hover','correct','wrong'));
+    }
     function refresh(){
       if(!nextData) return;
-      if(koreanEl){
-        koreanEl.textContent = nextData.word || '';
-        koreanEl.classList.remove('flash-correct','flash-wrong');
-      }
       const src = Array.isArray(nextData.choices) && nextData.choices.length===3
         ? nextData.choices.slice()
         : [nextData.meaning, '？', '？'];
-      // 表示順だけシャッフル（中身は固定）
-      const display = shuffleArr(src);
-      bars.forEach((bar, i) => {
-        resetBar(bar);
-        const txt = bar.querySelector('.ab-text');
-        if(txt) txt.textContent = display[i] || '';
-        bar.dataset.meaning = display[i] || '';
+      const display = shuffleArr(src);   // 表示順だけシャッフル
+      zones.forEach((z, i) => {
+        z.classList.remove('hover','correct','wrong');
+        const t = z.querySelector('.az-text');
+        if(t) t.textContent = display[i] || '';
+        z.dataset.meaning = display[i] || '';
       });
     }
-
     function setActive(on){
-      if(koreanEl) koreanEl.hidden = !on;
-      if(barsEl)   barsEl.hidden   = !on;
+      if(zonesEl) zonesEl.hidden = !on;
       if(on) refresh();
-      else bars.forEach(resetBar);
+      else   clearZoneStates();
       document.body.classList.toggle('beginner-mode', !!on);
     }
 
-    /* ----- 指離した位置 → キャンバス X 座標 -------------------------- */
-    // バーはキャンバスと同じ横幅に揃えているため、指のclientXをそのまま
-    // canvas.getBoundingClientRect 基準で内部座標に変換すれば
-    // 「スライドを離した位置」がそのまま落下位置になる
+    // clientY が乗っているゾーン index を返す。乗っていなければ -1
+    function zoneIndexAt(clientY){
+      for(let i=0;i<zones.length;i++){
+        const r = zones[i].getBoundingClientRect();
+        if(clientY >= r.top && clientY <= r.bottom) return i;
+      }
+      return -1;
+    }
+    // ドラッグ中のホバー強調更新
+    function updateHover(clientY){
+      if(!isActive()){ clearZoneStates(); return; }
+      const idx = zoneIndexAt(clientY);
+      zones.forEach((z,i)=>z.classList.toggle('hover', i===idx));
+    }
+    function clearHover(){
+      zones.forEach(z=>z.classList.remove('hover'));
+    }
+
+    // clientX → キャンバス内座標
     function clientToCanvasX(clientX){
       const r = canvas.getBoundingClientRect();
       const cx = (clientX - r.left) * (canvas.width / r.width);
       return Math.max(0, Math.min(WIDTH, cx));
     }
 
-    function commit(answerStr, dropXTarget){
-      if(!isActive()) return;
+    // 既存の touchend/mouseup から呼び出される
+    // 戻り値: true=コミット処理を行った（既存 tryDrop はスキップ）
+    function commitFromRelease(clientX, clientY){
+      if(!isActive()) return false;
+      const idx = zoneIndexAt(clientY);
+      clearHover();
+      if(idx < 0) return true; // ゾーン外で離した: 落下も判定もしない（既存 tryDrop もスキップ）
       const now = performance.now();
-      if(now - lastDropAt < dropCooldown) return;
+      if(now - lastDropAt < dropCooldown) return true;
       lastDropAt = now;
       const question = nextData;
-      if(!question) return;
-      const correct = (answerStr === question.meaning);
-      if(koreanEl){
-        koreanEl.classList.remove('flash-correct','flash-wrong');
-        void koreanEl.offsetWidth;
-        koreanEl.classList.add(correct ? 'flash-correct' : 'flash-wrong');
-      }
+      if(!question) return true;
+      const answer = zones[idx].dataset.meaning || '';
+      const correct = (answer === question.meaning);
+      zones[idx].classList.add(correct ? 'correct' : 'wrong');
+      setTimeout(()=>{
+        zones[idx].classList.remove('correct','wrong');
+      }, 380);
       if(correct){
-        // 正解: スライドを離した X 座標から果物を落とす
+        const dropXTarget = clientToCanvasX(clientX);
         dropX = dropXTarget;
         dropFruit(dropXTarget, nextLevel, false, question);
-        // dropFruit 内で rollNextSpawn -> refresh が走る
       } else {
-        // 不正解: 落下せず、ミス記録 + 次の問題へ進む
         if(question.word) Storage.addMistake(question.word);
         rollNextSpawn();
         drawNext();
       }
-    }
-
-    function beginDrag(bar, e){
-      if(!isActive()) return;
-      if(bar.classList.contains('committed')) return;
-      const r = bar.getBoundingClientRect();
-      const knob = bar.querySelector('.ab-knob');
-      const fill = bar.querySelector('.ab-fill');
-      const startX = getX(e);
-      // バー上をタップして始めた場合は knob を指の位置にジャンプさせる
-      let startKnobLeft;
-      if(e.target === knob){
-        startKnobLeft = parseFloat(knob.style.left) || KNOB_PAD;
-      } else {
-        const maxLeft = r.width - KNOB_W - KNOB_PAD;
-        const fingerLocalX = startX - r.left - KNOB_W/2;
-        startKnobLeft = Math.max(KNOB_PAD, Math.min(maxLeft, fingerLocalX));
-        knob.style.left = startKnobLeft + 'px';
-        fill.style.width = (startKnobLeft + KNOB_W) + 'px';
-      }
-      dragState = {
-        startX,
-        startKnobLeft,
-        barWidth: r.width,
-        knob, fill,
-      };
-      activeBar = bar;
-      bar.classList.add('dragging');
-      if(e.cancelable) e.preventDefault();
-    }
-    function onMove(e){
-      if(!activeBar || !dragState) return;
-      const x = getX(e);
-      const delta = x - dragState.startX;
-      const maxLeft = dragState.barWidth - KNOB_W - KNOB_PAD;
-      const newLeft = Math.max(KNOB_PAD, Math.min(maxLeft, dragState.startKnobLeft + delta));
-      dragState.knob.style.left  = newLeft + 'px';
-      dragState.fill.style.width = (newLeft + KNOB_W) + 'px';
-      if(e.cancelable) e.preventDefault();
-    }
-    function onEnd(e){
-      if(!activeBar || !dragState) return;
-      const bar = activeBar;
-      const ds  = dragState;
-      activeBar = null;
-      dragState = null;
-      bar.classList.remove('dragging');
-
-      const endX = getX(e);
-      const slideDelta = Math.abs(endX - ds.startX);
-      const minSlide = ds.barWidth * MIN_SLIDE;
-
-      if(slideDelta >= minSlide){
-        const answer = bar.dataset.meaning || '';
-        const correct = !!(nextData && answer === nextData.meaning);
-        // 「離した位置」のキャンバスX を落下位置にする
-        const dropXTarget = clientToCanvasX(endX);
-        bar.classList.add('committed', correct ? 'correct' : 'wrong');
-        commit(answer, dropXTarget);
-        setTimeout(()=>resetBar(bar), 420);
-      } else {
-        // 戻し
-        const knob = ds.knob, fill = ds.fill;
-        if(knob) knob.style.left = '';
-        if(fill) fill.style.width = '';
-      }
+      return true;
     }
 
     function init(){
-      bars.forEach(bar=>{
-        const knob = bar.querySelector('.ab-knob');
-        if(knob){
-          knob.addEventListener('mousedown', e=>beginDrag(bar,e));
-          knob.addEventListener('touchstart', e=>beginDrag(bar,e), {passive:false});
-        }
-        bar.addEventListener('mousedown', e=>{ if(e.target!==knob) beginDrag(bar,e); });
-        bar.addEventListener('touchstart', e=>{ if(e.target!==knob) beginDrag(bar,e); }, {passive:false});
+      // ドラッグ中のゾーン強調＋次の果物のX追従（マウス/タッチ）
+      document.addEventListener('mousemove', e=>{
+        if(!isActive()) return;
+        updateHover(e.clientY);
+        // カーソルがキャンバス外（ゾーン上など）にいても次の果物がXに追従するよう dropX を更新
+        const r = canvas.getBoundingClientRect();
+        dropX = Math.max(0, Math.min(WIDTH, (e.clientX - r.left)*(canvas.width/r.width)));
       });
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup',   onEnd);
-      document.addEventListener('touchmove', onMove, {passive:false});
-      document.addEventListener('touchend',  onEnd);
-      document.addEventListener('touchcancel', onEnd);
+      document.addEventListener('touchmove', e=>{
+        if(!isActive() || !e.touches.length) return;
+        const t = e.touches[0];
+        updateHover(t.clientY);
+        // 指がゾーン上でも追従させる（game 側のハンドラはキャンバス内でしか dropX を更新しない場合があるため二重で）
+        const r = canvas.getBoundingClientRect();
+        dropX = Math.max(0, Math.min(WIDTH, (t.clientX - r.left)*(canvas.width/r.width)));
+      }, {passive:true});
+
+      // PC: クリックで即時コミット（離す＝クリック位置で判定）
+      document.addEventListener('mousedown', e=>{
+        if(!isActive()) return;
+        if(e.target.closest && e.target.closest('button, .modal, .menu, .start')) return;
+        // 位置をキャンバスXに反映（即時プレビューのため）
+        const r = canvas.getBoundingClientRect();
+        dropX = Math.max(0, Math.min(WIDTH, (e.clientX - r.left)*(canvas.width/r.width)));
+        commitFromRelease(e.clientX, e.clientY);
+      });
+
+      // スマホ: 指を離した瞬間にコミット（既存 touchend と並走、tryDrop は beginner で no-op）
+      document.addEventListener('touchend', e=>{
+        if(!isActive()) return;
+        const ct = (e.changedTouches && e.changedTouches[0]) || null;
+        if(!ct) return;
+        if(ct.target && ct.target.closest && ct.target.closest('button, .modal, .menu, .start')) return;
+        commitFromRelease(ct.clientX, ct.clientY);
+      });
+      document.addEventListener('touchcancel', clearHover);
     }
 
-    return { init, setActive, refresh, isActive };
+    return { init, setActive, refresh, isActive, commitFromRelease, updateHover, clearHover };
   })();
   function dropFruit(x, lv, failed, variant){
     if(gameOver) return;
@@ -1162,10 +1117,37 @@ const Game = (()=>{
     UI.setNextWord(data.word);
   }
 
+  /* === 初級単語モードの韓国語をキャンバスに描く ====================
+   * 描画順: clear → ceiling → 韓国語 → 既存果物 → 次の果物(drawGuide)
+   * → 仕様の z 優先順: 次の果物 > 出題単語 > ケース/背景 を満たす
+   * ============================================================== */
+  function drawKoreanWord(){
+    if(mode !== 'beginner' || !nextData) return;
+    const word = nextData.word || '';
+    if(!word) return;
+    ctx.save();
+    const fs = 50;
+    ctx.font = `900 ${fs}px "Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // 視認性確保のため白いソフト輪郭を 2 重に重ねる
+    ctx.shadowColor = 'rgba(255,255,255,1)';
+    ctx.shadowBlur = 22;
+    ctx.fillStyle = '#c43e6e';
+    const x = WIDTH/2, y = 44;
+    ctx.fillText(word, x, y);
+    ctx.shadowBlur = 10;
+    ctx.fillText(word, x, y);
+    ctx.shadowBlur = 0;
+    ctx.fillText(word, x, y);
+    ctx.restore();
+  }
+
   function frame(){
     // 2. スタート前 / ゲームオーバー時は物理停止
     if(!gameOver && started) world.step(1);
     clear(); drawCeiling();
+    drawKoreanWord();                       // 韓国語は果物より下のレイヤー
     for(const b of world.bodies) drawBody(b);
     // 5. パーティクルは果物の上に、ガイドの下に重ねる
     stepParticles(); drawParticles();
@@ -1201,8 +1183,9 @@ const Game = (()=>{
   }
   // タップ対象が UI なら通常タッチハンドラに任せる
   // drop-zone は pointer-events:none なので e.target にはならない（透過）
-  // 初級単語モードのスライドバー（.answer-bars）もここで除外し、ジェスチャは Beginner 側で処理
-  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .menu, .quiz, .start, .answer-bars'));
+  // 初級単語モードの回答ゾーン（.answer-zones）は判定領域として扱うため、
+  // 既存のドラッグ/タッチ追跡（dropX 更新）にも乗せたい → isUI からは除外。
+  const isUI = el => !!(el && el.closest && el.closest('button, .modal, .menu, .quiz, .start'));
 
   // Mouse: keep the canvas-only behavior (cursor doesn't obscure view)
   canvas.addEventListener('mousemove',onMove);
@@ -1416,10 +1399,10 @@ const Game = (()=>{
     const wPx = Math.floor(w);
     canvas.style.width  = wPx + 'px';
     canvas.style.height = Math.floor(h) + 'px';
-    // 初級単語モードのスライドバー群はキャンバスと同じ横幅に揃える
-    // → バーのX範囲とキャンバスのX範囲が一致し、離した位置 == 落下位置になる
-    const barsEl = document.getElementById('answer-bars');
-    if(barsEl) barsEl.style.width = wPx + 'px';
+    // 初級単語モードの回答ゾーン群はキャンバスと同じ横幅に揃える
+    // → 指のX移動がそのまま「次の果物」のX移動として連動して見えるようにする
+    const zonesEl = document.getElementById('answer-zones');
+    if(zonesEl) zonesEl.style.width = wPx + 'px';
   }
 
   /* ===== Boot ===== */

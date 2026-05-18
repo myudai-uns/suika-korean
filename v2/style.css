@@ -155,122 +155,55 @@ body{
 }
 @media (hover:hover) and (pointer:fine){#game{cursor:none}}
 
-/* ===== 出題: 韓国語の大表示（ケース前面・テキストのみ／枠背景なし） ===== */
-.korean-display{
-  position:absolute;
-  top:6px;
-  left:50%;
-  transform:translateX(-50%);
-  z-index:20;                           /* ケース・果物の前面 */
-  pointer-events:none;
-  font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI",-apple-system,system-ui,sans-serif;
-  font-weight:900;
-  font-size:clamp(30px,6.8vh,60px);
-  line-height:1.05;
-  color:#c43e6e;                        /* ピンクの文字色（既存）を維持 */
-  text-shadow:
-    0 0 10px rgba(255,255,255,1),
-    0 0 18px rgba(255,255,255,.9),
-    0 2px 4px rgba(255,255,255,1),
-    0 4px 14px rgba(196,62,110,.25);
-  letter-spacing:.02em;
-  white-space:nowrap;
-  max-width:96%;
-  text-align:center;
-}
-.korean-display[hidden]{display:none}
-.korean-display.flash-correct{ animation:kdCorrect .5s ease-out }
-.korean-display.flash-wrong  { animation:kdWrong   .5s ease-out }
-@keyframes kdCorrect{
-  0%  {transform:translateX(-50%) scale(1);   color:#c43e6e}
-  50% {transform:translateX(-50%) scale(1.14);color:#2d8a52}
-  100%{transform:translateX(-50%) scale(1);   color:#c43e6e}
-}
-@keyframes kdWrong{
-  0%,100%{transform:translateX(-50%) translateX(0); color:#c43e6e}
-  20% {transform:translateX(-50%) translateX(-7px); color:#d44d4d}
-  40% {transform:translateX(-50%) translateX( 7px); color:#d44d4d}
-  60% {transform:translateX(-50%) translateX(-5px); color:#d44d4d}
-  80% {transform:translateX(-50%) translateX( 5px); color:#c43e6e}
-}
-
-/* ===== 出題: 3本スライドバー ===== */
-.answer-bars{
+/* ===== 出題: 縦3分割の回答ゾーン =================================
+ * 「ボタン」ではなく、指を離した Y 座標で選択肢を判定する判定領域。
+ * width は syncLayout でキャンバスと同じに揃え、X 範囲も完全一致させる。
+ * touch-action:none で縦スクロールを抑止し、ドラッグ→離す操作を素直に取れるように。
+ * ================================================================ */
+.answer-zones{
   flex:0 0 auto;
   display:flex;
   flex-direction:column;
   gap:4px;
-  padding:2px 0 0;                      /* ケースとの隙間を最小化 */
+  padding:2px 0 0;                       /* ケースとの隙間を最小化 */
   width:100%;
-  margin:0 auto;                         /* width は JS でキャンバスと一致させる */
-}
-.answer-bars[hidden]{display:none}
-
-.ab{
-  position:relative;
-  height:42px;
-  background:linear-gradient(180deg,#fff,#fff7fa);
-  border:2px solid #ffaecf;
-  border-bottom-width:3px;
-  border-radius:24px;
-  overflow:hidden;
+  margin:0 auto;                          /* width は JS でキャンバスと一致 */
   touch-action:none;
   user-select:none;
   -webkit-user-select:none;
 }
-.ab-fill{
-  position:absolute;
-  top:0;left:0;bottom:0;
-  width:0;
-  background:linear-gradient(90deg,rgba(255,142,182,.25),rgba(255,111,161,.55));
-  z-index:1;
-  pointer-events:none;
-  transition:width .18s ease-out;
-}
-.ab.dragging .ab-fill{transition:none}
-.ab-text{
-  position:absolute;inset:0;
+.answer-zones[hidden]{display:none}
+
+.az{
+  position:relative;
+  flex:1 1 0;
+  min-height:38px;
   display:flex;align-items:center;justify-content:center;
-  font-size:17px;font-weight:900;color:#7a3454;
-  z-index:2;
-  pointer-events:none;
+  background:linear-gradient(180deg,#fff,#fff7fa);
+  border:2px dashed #ffaecf;
+  border-radius:14px;
+  color:#7a3454;
+  font-size:16px;font-weight:900;
   text-shadow:0 1px 0 #fff;
+  transition:background .12s ease, border-color .12s ease, transform .12s ease;
 }
-.ab-hint{
-  position:absolute;
-  right:14px;top:50%;
-  transform:translateY(-50%);
-  font-size:10px;font-weight:700;
-  color:rgba(196,62,110,.42);
-  letter-spacing:.5px;
-  pointer-events:none;
-  z-index:2;
+.az .az-text{pointer-events:none}
+/* 指が現在乗っているゾーンを強調 */
+.az.hover{
+  background:linear-gradient(180deg,#fff7c8,#ffe28a);
+  border-style:solid;
+  border-color:#ffb43d;
+  color:#a64b00;
+  transform:scale(1.02);
 }
-.ab.dragging .ab-hint,
-.ab.committed .ab-hint{opacity:0;transition:opacity .15s}
-.ab-knob{
-  position:absolute;
-  top:50%;left:4px;
-  transform:translateY(-50%);
-  width:36px;height:36px;
-  background:linear-gradient(180deg,#ff8eb6,#ff6fa1);
-  color:#fff;
-  border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;font-weight:900;line-height:1;
-  box-shadow:0 2px 0 #d44d80, 0 2px 6px rgba(0,0,0,.18);
-  z-index:3;
-  cursor:grab;
-  touch-action:none;
-  transition:left .18s ease-out;
+.az.correct{
+  background:linear-gradient(180deg,#d8ffe6,#b8f0c8);
+  border-style:solid;border-color:#4dbb77;color:#1f7a3d;
 }
-.ab.dragging .ab-knob{transition:none;cursor:grabbing}
-.ab.correct{border-color:#4dbb77;background:linear-gradient(180deg,#d8ffe6,#b8f0c8)}
-.ab.correct .ab-text{color:#1f7a3d}
-.ab.correct .ab-knob{background:linear-gradient(180deg,#7ad99a,#4dbb77);box-shadow:0 2px 0 #2d8a52, 0 2px 6px rgba(0,0,0,.18)}
-.ab.wrong{border-color:#d44d4d;background:linear-gradient(180deg,#ffd8d8,#ffb8b8)}
-.ab.wrong .ab-text{color:#8a1e1e}
-.ab.wrong .ab-knob{background:linear-gradient(180deg,#ec7373,#d44d4d);box-shadow:0 2px 0 #8a1e1e, 0 2px 6px rgba(0,0,0,.18)}
+.az.wrong{
+  background:linear-gradient(180deg,#ffd8d8,#ffb8b8);
+  border-style:solid;border-color:#d44d4d;color:#8a1e1e;
+}
 
 /* 初級単語モード時はエッジドラッグ用 drop-zone を不要にする */
 body.beginner-mode .drop-zone{display:none}
